@@ -11,6 +11,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -65,6 +66,47 @@ public class OdeskDBQueries {
 		System.out.println("End");
 	}
 
+	public HashMap<Integer, HashMap<Integer, ArrayList<String>>> getCoversByContractorByApplication() {
+		HashMap<Integer, HashMap<Integer, ArrayList<String>>> hm = new HashMap<Integer, HashMap<Integer, ArrayList<String>>>();
+		//PrintToFile pf = new PrintToFile();
+		//pf.openFile("/Users/mkokkodi/git/nudge/nudge_java/data/cover.csv");
+		try {
+			String selectString = "select contractor, application, cover from panagiotis.marios_covers_train " +
+					"where contractor in ( select t.contractor from panagiotis.marios_contractors_train t left outer join panagiotis.marios_application_cover_scores s " +
+					"on t.contractor = s.contractor and s.unigram_score is null limit 1000 )";
+
+			PreparedStatement stmt = conn.prepareStatement(selectString);
+			// System.out.println("Executing...");
+			stmt.execute();
+			System.out.println("Query executed...");
+			ResultSet rs = stmt.getResultSet();
+
+			while (rs.next()) {
+				int contractor = rs.getInt("contractor");
+				int application = rs.getInt("application");
+				String cover = rs.getString("cover");
+				HashMap<Integer, ArrayList<String>> innerHm = hm
+						.get(contractor);
+				if (innerHm == null)
+					innerHm = new HashMap<Integer, ArrayList<String>>();
+				ArrayList<String> l = new ArrayList<String>();
+				l.add(cover);
+				innerHm.put(application, l);
+				hm.put(contractor, innerHm);
+				//String str = contractor + "," + application + ",\"" + cover
+					//	+ "\"";
+				//pf.writeToFile(str);
+			}
+			//pf.closeFile();
+
+			return hm;
+
+		} catch (SQLException sqle) {
+			sqle.printStackTrace();
+		}
+		return null;
+	}
+
 	private void analyzeCoverLetters() {
 		TextPreProcessing tp = new TextPreProcessing();
 		PrintToFile pf = new PrintToFile();
@@ -72,8 +114,8 @@ public class OdeskDBQueries {
 		pf.writeToFile("word,document_frequency");
 		try {
 			String selectString = "select application, cover"
-					+ " from panagiotis.marios_application_covers " +
-					"limit 1000000";
+					+ " from panagiotis.marios_application_covers "
+					+ "limit 1000000";
 			PreparedStatement stmt = conn.prepareStatement(selectString);
 			// System.out.println("Executing...");
 			stmt.execute();
@@ -84,7 +126,8 @@ public class OdeskDBQueries {
 				tp.process(rs.getString("cover"), rs.getInt("application"));
 			}
 
-			System.out.println("Total terms:"+TextPreProcessing.docFrequencies.size());
+			System.out.println("Total terms:"
+					+ TextPreProcessing.docFrequencies.size());
 			Set<Entry<String, Double>> set = TextPreProcessing.docFrequencies
 					.getEntrySet();
 			Iterator<Entry<String, Double>> setIt = set.iterator();
@@ -390,6 +433,22 @@ public class OdeskDBQueries {
 			e1.printStackTrace();
 		}
 		return null;
+	}
+
+	public void insertLMScore(String str) {
+		try {
+			String selectString = "insert into panagiotis.marios_application_cover_scores values" + str;
+			PreparedStatement stmt = conn
+					.prepareStatement(selectString);
+			System.out.println(selectString);
+			// System.out.println("Executing...");
+			stmt.executeUpdate();
+			System.out.println("Query executed...");
+
+		} catch (SQLException sqle) {
+			sqle.printStackTrace();
+		}
+		
 	}
 
 }

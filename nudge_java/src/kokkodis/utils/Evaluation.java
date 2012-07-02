@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.TreeSet;
 
 import kokkodis.factory.XYPair;
+import kokkodis.logitModel.Classify;
 import kokkodis.utils.compare.XYPairComparator;
 
 public class Evaluation {
@@ -23,12 +24,15 @@ public class Evaluation {
 	 *            probability threshold for classification
 	 */
 	public void updateEvaluation(Counter<String> errorsAnalysis,
-			double predictedProbabilityOfBeingPositive, double threshold, int trueLabel) {
+			double predictedProbabilityOfBeingPositive, double threshold,
+			int trueLabel) {
 		if (predictedProbabilityOfBeingPositive >= threshold && trueLabel == 1)
 			errorsAnalysis.incrementCount("TP", 1);
-		else if (predictedProbabilityOfBeingPositive >= threshold && trueLabel == 0) {
+		else if (predictedProbabilityOfBeingPositive >= threshold
+				&& trueLabel == 0) {
 			errorsAnalysis.incrementCount("FP", 1);
-		} else if (predictedProbabilityOfBeingPositive < threshold && trueLabel == 1)
+		} else if (predictedProbabilityOfBeingPositive < threshold
+				&& trueLabel == 1)
 			errorsAnalysis.incrementCount("FN", 1);
 		else
 			errorsAnalysis.incrementCount("TN", 1);
@@ -55,11 +59,19 @@ public class Evaluation {
 
 	}
 
-	
+	public void printAUCPoints(TreeSet<XYPair> xyData) {
+		PrintToFile pf = new PrintToFile();
+		pf.openFile(Classify.basePath + "results/" + Classify.currentSolver
+				+ "_aucPoints_C" + Classify.Cstr+"_"+ Classify.baseFile+".csv");
+		xyData.add(new XYPair(0, 0));
+		xyData.add(new XYPair(1, 1));
+		for (XYPair pair : xyData)
+			pf.writeToFile(pair.getX() + "," + pair.getY());
+		pf.closeFile();
+
+	}
 
 	public double calculateAUC(TreeSet<XYPair> xyData) {
-
-		
 
 		xyData.add(new XYPair(0, 0));
 		xyData.add(new XYPair(1, 1));

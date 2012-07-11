@@ -29,7 +29,8 @@ import de.bwaldvogel.liblinear.SolverType;
 import de.bwaldvogel.liblinear.Train;
 
 public class Classify {
-	public static String basePath;  //= "/Users/mkokkodi/Desktop/bigFiles/nudge/";
+	public static String basePath; // =
+									// "/Users/mkokkodi/Desktop/bigFiles/nudge/";
 	public static String currentSolver = "L1R_LR";// "L2R_L2LOSS_SVC";//"L1R_LR";
 													// //
 													// "L2R_LR"//L2R_L1LOSS_SVC_DUAL
@@ -52,6 +53,7 @@ public class Classify {
 	private static boolean verbal = false;
 	private static boolean showWeights = false;
 	private static String slash;
+	private static double eps = 0.0000001;
 
 	/**
 	 * @param args
@@ -98,6 +100,9 @@ public class Classify {
 					} else if (args[i].contains("-w")) {
 						showWeights = true;
 
+					} else if (args[i].contains("-e")) {
+						eps = Double.parseDouble(args[i + 1].trim());
+						i++;
 					}
 				}
 				DecimalFormat myFormatter = new DecimalFormat("#.###");
@@ -130,13 +135,14 @@ public class Classify {
 
 	private static void initializePaths() {
 		slash = System.getProperty("file.separator");
-		String path =Thread.currentThread().getContextClassLoader().getResource(".").getPath();
-	//	System.out.println(slash);
-		basePath = path.replaceAll("nudge_java"+slash,  "").replaceAll("bin"+slash,"");
-		basePath += "data"+slash;
-		//System.out.println(basePath);
+		String path = Thread.currentThread().getContextClassLoader()
+				.getResource(".").getPath();
+		// System.out.println(slash);
+		basePath = path.replaceAll("nudge_java" + slash, "").replaceAll(
+				"bin" + slash, "");
+		basePath += "data" + slash;
+		// System.out.println(basePath);
 
-		
 	}
 
 	private static void printHelp() {
@@ -147,7 +153,9 @@ public class Classify {
 				+ "-c		create training and test files (0.85 - 0.15, vertical on contractors) >>"
 				+ "-b		Build model from training data. >>"
 				+ "-p		Load model and predict. >>"
-				+ "-v		Show probabilistic analysis >>" + "-w		print weights";
+				+ "-v		Show probabilistic analysis >>"
+				+ "-w		print weights"
+				+ "-e		eps: difference between objective function to stop itearting. Default:0.0000001 ";
 		System.out.println("Parameters:");
 		System.out.println("---------------------------------------");
 		for (String str : s.split(">>"))
@@ -318,7 +326,7 @@ public class Classify {
 	private static void buildModel() {
 		Problem problem = loadProblem("trainData/train" + baseFile + ".txt");
 
-		Parameter p = new Parameter(getSolverType(), C, 0.0000001);
+		Parameter p = new Parameter(getSolverType(), C, eps);
 		Model ml = Linear.train(problem, p);
 		Linear.enableDebugOutput();
 		// int [] predicted = new int[problem.l];

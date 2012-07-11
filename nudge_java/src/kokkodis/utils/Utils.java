@@ -58,15 +58,15 @@ public class Utils {
 	public void createTrainTest(String inFile, String cat) {
 		PrintToFile trainFile = new PrintToFile();
 		trainFile
-				.openFile("/Users/mkokkodi/Desktop/bigFiles/nudge/trainData/train"
+				.openFile(Classify.basePath+"trainData/train"
 						+ cat + ".txt");
 
 		PrintToFile testFile = new PrintToFile();
-		testFile.openFile("/Users/mkokkodi/Desktop/bigFiles/nudge/testData/test"
+		testFile.openFile(Classify.basePath+"testData/test"
 				+ cat + ".txt");
 		try {
 			BufferedReader input = new BufferedReader(new FileReader(
-					"/Users/mkokkodi/Desktop/bigFiles/nudge/rawData/" + inFile));
+					Classify.basePath+"/rawData/" + inFile));
 			String line;
 			line = input.readLine();
 

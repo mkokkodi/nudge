@@ -448,8 +448,10 @@ public class OdeskDBQueries {
 	public void insertLMScore(String str, String table) {
 		try {
 			System.out.println("Inserting...");
-			String selectString = "insert into panagiotis."+table+" values"
+			String selectString = "insert into panagiotis."+table+" values "
 					+ str;
+			
+			//System.out.println(selectString);
 			PreparedStatement stmt = conn.prepareStatement(selectString);
 			// System.out.println(selectString);
 			// System.out.println("Executing...");
@@ -487,12 +489,12 @@ public class OdeskDBQueries {
 				int contractor = rs.getInt("contractor");
 				//System.out.println("in:"+contractor);
 				int application = rs.getInt("application");
-				String cover = rs.getString("job_descrition");
+				String text = rs.getString("job_description");
 				ArrayList<TextHolder> holderList = hm.get(contractor);
 				if (holderList == null)
 					holderList = new ArrayList<TextHolder>();
 				TextHolder ch = new TextHolder();
-				ch.getText().add(cover);
+				ch.getText().add(text);
 				ch.setApplication(application);
 				holderList.add(ch);
 				hm.put(contractor, holderList);

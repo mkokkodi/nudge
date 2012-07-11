@@ -6,6 +6,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
 
+
+
 /**
  * A map from objects to doubles.  Includes convenience methods for getting,
  * setting, and incrementing element counts.  Objects not in the counter will
@@ -185,21 +187,8 @@ public class Counter <E> implements Serializable {
     return maxKey;
   }
 
-  /**
-   * Returns a string representation with the keys ordered by decreasing
-   * counts.
-   *
-   * @return string representation
-   */
-  
+ 
 
-  /**
-   * Returns a string representation which includes no more than the
-   * maxKeysToPrint elements with largest counts.
-   *
-   * @param maxKeysToPrint
-   * @return partial string representation
-   */
  
   /**
    * Entry sets are an efficient way to iterate over
@@ -228,18 +217,6 @@ public class Counter <E> implements Serializable {
     incrementAll(collection, 1.0);
   }
 
-  public static void main(String[] args) {
-    Counter<String> counter = new Counter<String>();
-    System.out.println(counter);
-    counter.incrementCount("planets", 7);
-    System.out.println(counter);
-    counter.incrementCount("planets", 1);
-    System.out.println(counter);
-    counter.setCount("suns", 1);
-    System.out.println(counter);
-    counter.setCount("aliens", 0);
-    System.out.println(counter);
-    System.out.println("Total: " + counter.totalCount());
-  }
+  
 
 }

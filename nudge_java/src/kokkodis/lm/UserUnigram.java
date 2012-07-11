@@ -9,6 +9,9 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
 
+import kokkodis.utils.Counter;
+
+
 import com.aliasi.tokenizer.IndoEuropeanTokenizerFactory;
 import com.aliasi.tokenizer.LowerCaseTokenizerFactory;
 import com.aliasi.tokenizer.PorterStemmerTokenizerFactory;
@@ -17,13 +20,9 @@ import com.aliasi.tokenizer.StopTokenizerFactory;
 import com.aliasi.tokenizer.Tokenizer;
 import com.aliasi.tokenizer.TokenizerFactory;
 
-import kokkodis.utils.Counter;
+public class UserUnigram {   
 
-import nlp.langmodel.LanguageModel;
-
-public class UserUnigram implements LanguageModel {
-
-	public static Counter<String> wordCounter;
+	public static Counter<String> wordCounter;   
 	public static Counter<String> currentCounter;
 	private static HashSet<String> stopwords;
 	private static String UNK = "<UNK>";
@@ -86,17 +85,6 @@ public class UserUnigram implements LanguageModel {
 		stopwords = readStopwords();
 	}
 
-	@Override
-	public double getSentenceProbability(List<String> sentence) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public List<String> generateSentence() {
-		// TODO Auto-generated method stub
-		return null;
-	}
 
 	private HashSet<String> readStopwords() {
 		HashSet<String> h = new HashSet<String>();

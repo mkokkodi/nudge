@@ -8,8 +8,8 @@ probs3m <- read.table(file="/Users/mkokkodi/Desktop/bigFiles/nudge/probs/L2R_LR_
 
 attach(probs500k)
 plot(Pr.predicted_positive.threshold.,probs500k$Pr.actual_positive., ylim=range(0,1),xlim=range(0,1),
-     type='o',pch = 12, lty=1, col="blue", lwd=3, ylab="Actual being positive", 
-     xlab="Predicted probability")
+     type='o',pch = 12, lty=1, col="blue", lwd=3, ylab="Actual probability of being positive", 
+     xlab="Predicted probability of being positive")
 
 lines(Pr.predicted_positive.threshold.,probs1m$Pr.actual_positive., type="o", pch=22, lty=2, lwd=3, col="red")
 lines(Pr.predicted_positive.threshold.,probs2m$Pr.actual_positive., type="o", pch=21, lty=3, lwd=3,col="green")

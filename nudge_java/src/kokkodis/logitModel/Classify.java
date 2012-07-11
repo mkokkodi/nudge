@@ -4,7 +4,10 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.text.DecimalFormat;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Map.Entry;
+import java.util.TreeMap;
 import java.util.TreeSet;
 
 import org.postgresql.ds.common.BaseDataSource;
@@ -26,71 +29,171 @@ import de.bwaldvogel.liblinear.SolverType;
 import de.bwaldvogel.liblinear.Train;
 
 public class Classify {
-	public static String basePath = "/Users/mkokkodi/Desktop/bigFiles/nudge/";
-	public static String currentSolver = "L2R_LR";// "L2R_L2LOSS_SVC";//"L1R_LR";
+	public static String basePath;  //= "/Users/mkokkodi/Desktop/bigFiles/nudge/";
+	public static String currentSolver = "L1R_LR";// "L2R_L2LOSS_SVC";//"L1R_LR";
 													// //
 													// "L2R_LR"//L2R_L1LOSS_SVC_DUAL
 													// ;L1R_LR
-	
-	public static String baseFile="2_5m";
+
+	public static String baseFile = "10";
+
 	public static double randomProbPositive;
-	public static double C=1;
+	public static double C = 1;
 	public static String Cstr;
+	public static String interceptStr;
+
+	private static double intercept = 0;
+	public static String[] features;
+
+	/* Flags */
+	private static boolean createFiles = false;
+	private static boolean buildModel = false;
+	private static boolean predict = false;
+	private static boolean verbal = false;
+	private static boolean showWeights = false;
+	private static String slash;
 
 	/**
 	 * @param args
+	 *            param 1: basefile -f param 2: solver (L1R_LR,L2R_LR) -s param
+	 *            3: Penalty -C param 4: Intercept - I creaateFiles 5: -c build
+	 *            model 6: -b predict : -p probabilistic analysis: -v
+	 *            printWeights: -w
 	 */
 
 	public static void main(String[] args) {
 
-		String[] baseNames = {"500k", "1m", "2m","2_5m","3m" };
-		String[] probSolvers = {"L2R_LR_DUAL"};
-		for (String str : baseNames) {
-			baseFile = str;
-		//for(String str: probSolvers){
-			//currentSolver = str;
-	//	baseFile = "3m";
-		System.out.println("Running "+baseFile);
-		//	if(str.equals("2_5m")){
-		//	createDatasets();
-		//for(double c=0.5; c>0.01; c *= c){
-		//for(double c=2; c<65; c*=c ){
-	//	C=c;
-	
-		DecimalFormat myFormatter = new DecimalFormat("#.###");
-			Cstr = myFormatter.format(C);
+		initializePaths();
 
-	//		buildModel();
-			predict();
-		
-		//	ProbabilisticAnalysis.doProbabilisticAnalysis();
-			//}
-			//printWeights();
+		if (args.length > 0) {
+
+			if (args[0].contains("-h"))
+				printHelp();
+			else {
+				for (int i = 0; i < args.length; i++) {
+					if (args[i].contains("-f")) {
+						baseFile = args[i + 1];
+						i++;
+					} else if (args[i].contains("-s")) {
+						currentSolver = args[i + 1];
+						i++;
+					} else if (args[i].contains("-C")) {
+						C = Double.parseDouble(args[i + 1].trim());
+						i++;
+					} else if (args[i].contains("-I")) {
+						intercept = Double.parseDouble(args[i + 1]);
+						i++;
+					} else if (args[i].contains("-c")) {
+						createFiles = true;
+
+					} else if (args[i].contains("-b")) {
+						buildModel = true;
+
+					} else if (args[i].contains("-p")) {
+						predict = true;
+
+					} else if (args[i].contains("-v")) {
+						verbal = true;
+
+					} else if (args[i].contains("-w")) {
+						showWeights = true;
+
+					}
+				}
+				DecimalFormat myFormatter = new DecimalFormat("#.###");
+				Cstr = myFormatter.format(C);
+				interceptStr = myFormatter.format(intercept);
+
+				System.out.println("Running file cat" + baseFile);
+				if (createFiles)
+					createDatasets();
+				if (buildModel)
+					buildModel();
+
+				if (predict)
+					predict();
+				if (verbal)
+					ProbabilisticAnalysis.doProbabilisticAnalysis();
+
+				if (showWeights) {
+					indexFeatures();
+					printWeights();
+				}
+
+			}
+		} else {
+			printHelp();
+
 		}
 
 	}
 
+	private static void initializePaths() {
+		slash = System.getProperty("file.separator");
+		String path =Thread.currentThread().getContextClassLoader().getResource(".").getPath();
+	//	System.out.println(slash);
+		basePath = path.replaceAll("nudge_java"+slash,  "").replaceAll("bin"+slash,"");
+		basePath += "data"+slash;
+		//System.out.println(basePath);
+
+		
+	}
+
+	private static void printHelp() {
+		String s = "-f		basefile : 10,20,30 >>"
+				+ "-s 		solver type: L1R_LR or L2R_LR  >>"
+				+ "-C		Penalty parameter (double) >>"
+				+ "-I		Intercept: 0 default. 1 for intercept. >>"
+				+ "-c		create training and test files (0.85 - 0.15, vertical on contractors) >>"
+				+ "-b		Build model from training data. >>"
+				+ "-p		Load model and predict. >>"
+				+ "-v		Show probabilistic analysis >>" + "-w		print weights";
+		System.out.println("Parameters:");
+		System.out.println("---------------------------------------");
+		for (String str : s.split(">>"))
+			System.out.println(str);
+		System.out.println("---------------------------------------");
+	}
+
 	private static void printWeights() {
 		try {
-			Model ml = Linear.loadModel(new File(basePath + "model/" + currentSolver
-					+ "_" + baseFile));
+			Model ml = Linear.loadModel(new File(basePath + "model/"
+					+ currentSolver + "_C" + Cstr + "_I" + interceptStr + "_"
+					+ baseFile));
+			System.out.println("Printing weights for:" + basePath + "model/"
+					+ currentSolver + "_C" + Cstr + "_I" + interceptStr + "_"
+					+ baseFile);
 			double[] w = ml.getFeatureWeights();
-			System.out.print(baseFile);
-			for (double w1 : w)
-				System.out.print(","+w1 );
-			System.out.println();
+			// System.out.print(baseFile);
+			TreeMap<Double, String> tm = new TreeMap<Double, String>(
+					new Comparator<Double>() {
+
+						@Override
+						public int compare(Double o1, Double o2) {
+							return (Math.abs(o1.doubleValue()) > Math.abs(o2
+									.doubleValue()) ? -1 : 1);
+						}
+					});
+
+			for (int i = 0; i < w.length; i++) {
+				tm.put(w[i], features[i]);
+			}
+
+			for (Entry<Double, String> e : tm.entrySet())
+				System.out.println(e.getValue() + " : " + e.getKey());
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+
 	}
 
 	private static void predict() {
 		Model ml = null;
 		try {
-			ml = Linear.loadModel(new File(basePath + "model/" + currentSolver + "_C"+Cstr
-					+ "_" + baseFile));
+
+			ml = Linear.loadModel(new File(basePath + "model/" + currentSolver
+					+ "_C" + Cstr + "_I" + interceptStr + "_" + baseFile));
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -148,7 +251,8 @@ public class Classify {
 		/* end */
 		// System.out.println("Predicting...");
 		PrintToFile pf = new PrintToFile();
-		pf.openFile(basePath + "probs/prob_" +   currentSolver+"_C"+Cstr+"_"+baseFile + ".csv");
+		pf.openFile(basePath + "probs/prob_" + currentSolver + "_C" + Cstr
+				+ "_I" + interceptStr + "_" + baseFile + ".csv");
 		pf.writeToFile("probPositive,actual");
 
 		Problem problem = loadProblem("testData/test" + baseFile + ".txt");
@@ -177,19 +281,19 @@ public class Classify {
 		double negativeInstances = errorAnalysis.getCount("FP")
 				+ errorAnalysis.getCount("TN");
 
-//		System.out.println("majorityClass:"
-	//			+ Math.max(positiveInstances, negativeInstances)
-		//		/ (positiveInstances + negativeInstances));
+		System.out.println("majorityClass:"
+				+ Math.max(positiveInstances, negativeInstances)
+				/ (positiveInstances + negativeInstances));
 		double acc = (errorAnalysis.getCount("TP") + errorAnalysis
 				.getCount("TN")) / errorAnalysis.totalCount();
-/*		System.out.println("Our model's acc:" + acc);
+		System.out.println("Our model's acc:" + acc);
 		System.out.println("       |     Actual    | ");
 		System.out.println("------ |   +   |   -   | ");
 		System.out.println("  +    | " + (int) errorAnalysis.getCount("TP")
 				+ " | " + (int) errorAnalysis.getCount("FP") + " | ");
 		System.out.println("  -    | " + (int) errorAnalysis.getCount("FN")
 				+ " | " + (int) errorAnalysis.getCount("TN") + " | ");
-*/
+
 		/* for AUC */
 		for (double th = 0.1; th < 0.95; th += 0.05) {
 			Counter<String> curCounter = errorCounters.get(th);
@@ -197,13 +301,17 @@ public class Classify {
 			xyData.add(new XYPair(curCounter.getCount("FPRate"), curCounter
 					.getCount("TPRate")));
 		}
-		//System.out.println("AUC:" + eval.calculateAUC(xyData));
+		// System.out.println("AUC:" + eval.calculateAUC(xyData));
 		double baseline = Math.max(positiveInstances, negativeInstances)
 				/ (positiveInstances + negativeInstances);
 		randomProbPositive = 1 - baseline;
-		System.out.println(baseFile+","+baseline+","+acc+","+eval.calculateAUC(xyData)+"," 
-				+errorAnalysis.getCount("TP")+","+errorAnalysis.getCount("FP")+","
-				+errorAnalysis.getCount("TN")+","+errorAnalysis.getCount("FN"));
+		/*
+		 * System.out.println(baseFile+","+baseline+","+acc+","+eval.calculateAUC
+		 * (xyData)+","
+		 * +errorAnalysis.getCount("TP")+","+errorAnalysis.getCount("FP")+","
+		 * +errorAnalysis.getCount("TN")+","+errorAnalysis.getCount("FN"));
+		 */
+		System.out.println("AUC:" + eval.calculateAUC(xyData));
 		eval.printAUCPoints(xyData);
 	}
 
@@ -217,10 +325,10 @@ public class Classify {
 		// Linear.crossValidation(problem, p, 5, predicted );
 		// for(int i:predicted)
 		// System.out.println(i);
-		
+
 		try {
-			Linear.saveModel(new File(basePath + "model/" + currentSolver + "_C" + Cstr+"_"
-					+ baseFile), ml);
+			Linear.saveModel(new File(basePath + "model/" + currentSolver
+					+ "_C" + Cstr + "_I" + interceptStr + "_" + baseFile), ml);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -244,7 +352,7 @@ public class Classify {
 		if (currentSolver.equals("L2R_L1LOSS_SVC_DUAL"))
 			return SolverType.L2R_L1LOSS_SVC_DUAL;
 		if (currentSolver.equals("L2R_LR_DUAL"))
-				return SolverType.L2R_LR_DUAL;
+			return SolverType.L2R_LR_DUAL;
 		return null;
 	}
 
@@ -253,7 +361,8 @@ public class Classify {
 		try {
 			// problem = Problem.readFromFile(q.createTestFile(), 1);
 			System.out.println("Loading");
-			problem = Problem.readFromFile(new File(basePath + file), 0);
+			problem = Problem
+					.readFromFile(new File(basePath + file), intercept);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -266,7 +375,13 @@ public class Classify {
 
 	private static void createDatasets() {
 		Utils u = new Utils();
-		u.createTrainingFile("train" + baseFile + ".csv");
+		u.createTrainTest("cat" + baseFile + ".csv", baseFile);
+
+	}
+
+	private static void indexFeatures() {
+		Utils u = new Utils();
+		features = u.getFeatures();
 
 	}
 

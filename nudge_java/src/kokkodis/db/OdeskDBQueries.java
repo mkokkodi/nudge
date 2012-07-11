@@ -19,6 +19,7 @@ import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 
+import kokkodis.lm.TextHolder;
 import kokkodis.probInterview.dataClasses.Contractor;
 import kokkodis.textprocessing.TextPreProcessing;
 import kokkodis.utils.Counter;
@@ -66,38 +67,47 @@ public class OdeskDBQueries {
 		System.out.println("End");
 	}
 
-	public HashMap<Integer, HashMap<Integer, ArrayList<String>>> getCoversByContractorByApplication() {
-		HashMap<Integer, HashMap<Integer, ArrayList<String>>> hm = new HashMap<Integer, HashMap<Integer, ArrayList<String>>>();
-		//PrintToFile pf = new PrintToFile();
-		//pf.openFile("/Users/mkokkodi/git/nudge/nudge_java/data/cover.csv");
+	public HashMap<Integer, ArrayList<TextHolder>> getCoversByContractorByApplication() {
+		HashMap<Integer, ArrayList<TextHolder>> hm = new HashMap<Integer, ArrayList<TextHolder>>();
+		// PrintToFile pf = new PrintToFile();
+		// pf.openFile("/Users/mkokkodi/git/nudge/nudge_java/data/cover.csv");
+		System.out.println("Selecting cover letters...");
 		try {
-			String selectString = "select contractor, application, cover from panagiotis.marios_covers_train " +
-					"where contractor in ( select t.contractor from panagiotis.marios_contractors_train t left outer join panagiotis.marios_application_cover_scores s " +
-					"on t.contractor = s.contractor and s.unigram_score is null limit 1000 )";
+			String selectString = "select c.application, c.cover, c.contractor "
+					+ "from "
+					+ "(  "
+					+ "select distinct(con.contractor) " +
+					"from panagiotis.temp_contractors con " +
+					"left outer join  panagiotis.marios_application_cover_scores  s " +
+					"on con.contractor = s.contractor where unigram_score is null" +
+					" limit 100) r "
+					+ "inner join panagiotis.temp_application_cover c on r.contractor = c.contractor "
+					+ "order by date_created";
 
 			PreparedStatement stmt = conn.prepareStatement(selectString);
 			// System.out.println("Executing...");
 			stmt.execute();
-			System.out.println("Query executed...");
+			System.out.println("Cover letters ready to parse.");
 			ResultSet rs = stmt.getResultSet();
 
 			while (rs.next()) {
 				int contractor = rs.getInt("contractor");
+				//System.out.println("in:"+contractor);
 				int application = rs.getInt("application");
 				String cover = rs.getString("cover");
-				HashMap<Integer, ArrayList<String>> innerHm = hm
-						.get(contractor);
-				if (innerHm == null)
-					innerHm = new HashMap<Integer, ArrayList<String>>();
-				ArrayList<String> l = new ArrayList<String>();
-				l.add(cover);
-				innerHm.put(application, l);
-				hm.put(contractor, innerHm);
-				//String str = contractor + "," + application + ",\"" + cover
-					//	+ "\"";
-				//pf.writeToFile(str);
+				ArrayList<TextHolder> holderList = hm.get(contractor);
+				if (holderList == null)
+					holderList = new ArrayList<TextHolder>();
+				TextHolder ch = new TextHolder();
+				ch.getText().add(cover);
+				ch.setApplication(application);
+				holderList.add(ch);
+				hm.put(contractor, holderList);
+				// String str = contractor + "," + application + ",\"" + cover
+				// + "\"";
+				// pf.writeToFile(str);
 			}
-			//pf.closeFile();
+			// pf.closeFile();
 
 			return hm;
 
@@ -434,21 +444,70 @@ public class OdeskDBQueries {
 		}
 		return null;
 	}
-
-	public void insertLMScore(String str) {
+	
+	public void insertLMScore(String str, String table) {
 		try {
-			String selectString = "insert into panagiotis.marios_application_cover_scores values" + str;
-			PreparedStatement stmt = conn
-					.prepareStatement(selectString);
-			System.out.println(selectString);
+			System.out.println("Inserting...");
+			String selectString = "insert into panagiotis."+table+" values"
+					+ str;
+			PreparedStatement stmt = conn.prepareStatement(selectString);
+			// System.out.println(selectString);
 			// System.out.println("Executing...");
 			stmt.executeUpdate();
-			System.out.println("Query executed...");
+			// System.out.println("Query executed...");
 
 		} catch (SQLException sqle) {
 			sqle.printStackTrace();
 		}
-		
+
+	}
+
+	public HashMap<Integer, ArrayList<TextHolder>> getJobsByContractorByApplication() {
+		HashMap<Integer, ArrayList<TextHolder>> hm = new HashMap<Integer, ArrayList<TextHolder>>();
+		System.out.println("Selecting Job descriptions...");
+		try {
+			String selectString = "select c.application, c.job_description, c.contractor " +
+					"from (  select distinct(con.contractor) " +
+					"from panagiotis.temp_contractors_for_jobs con  " +
+					"left outer join  panagiotis.marios_application_job_score  s " +
+					"on con.contractor = s.contractor " +
+					"where unigram_score is null  " +
+					"limit 100) r " +
+					"inner join panagiotis.temp_application_job c " +
+					"on r.contractor = c.contractor " +
+					"order by date_created;";
+
+			PreparedStatement stmt = conn.prepareStatement(selectString);
+			// System.out.println("Executing...");
+			stmt.execute();
+			System.out.println("Cover letters ready to parse.");
+			ResultSet rs = stmt.getResultSet();
+
+			while (rs.next()) {
+				int contractor = rs.getInt("contractor");
+				//System.out.println("in:"+contractor);
+				int application = rs.getInt("application");
+				String cover = rs.getString("job_descrition");
+				ArrayList<TextHolder> holderList = hm.get(contractor);
+				if (holderList == null)
+					holderList = new ArrayList<TextHolder>();
+				TextHolder ch = new TextHolder();
+				ch.getText().add(cover);
+				ch.setApplication(application);
+				holderList.add(ch);
+				hm.put(contractor, holderList);
+				// String str = contractor + "," + application + ",\"" + cover
+				// + "\"";
+				// pf.writeToFile(str);
+			}
+			// pf.closeFile();
+
+			return hm;
+
+		} catch (SQLException sqle) {
+			sqle.printStackTrace();
+		}
+		return null;
 	}
 
 }

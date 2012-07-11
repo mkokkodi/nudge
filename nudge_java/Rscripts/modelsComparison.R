@@ -11,6 +11,6 @@ lines(aucL1$X0.0,aucL1$X0.0.1, type="o", pch=22, lty=2, lwd=3, col="red")
 #lines(aucL2dual$X0.0,aucL2dual$X0.0.1, type="o", pch=21, lty=3, lwd=3,col="green")
 lines(aucL2dual$X0.0,aucL2dual$X0.0, type="l",  lwd=2, col="black")
 
-legend( "topleft",c("L2E_LR","L1R_LR"), border=c(NA,NA,NA,NA),  cex=1, 
+legend( "topleft",c("L2R_LR","L1R_LR"), border=c(NA,NA,NA,NA),  cex=1, 
        col=c("blue","red","black"), pch=c(12,22,21,-1), lty=c(1,2,3,1))
 

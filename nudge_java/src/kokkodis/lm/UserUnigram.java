@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.regex.Pattern;
 
 import com.aliasi.tokenizer.IndoEuropeanTokenizerFactory;
@@ -23,7 +24,9 @@ import nlp.langmodel.LanguageModel;
 public class UserUnigram implements LanguageModel {
 
 	public static Counter<String> wordCounter;
+	public static Counter<String> currentCounter;
 	private static HashSet<String> stopwords;
+	private static String UNK = "<UNK>";
 
 	public ArrayList<String> preProcess(String s, ArrayList<String> globalList) {
 		if (s != null) {
@@ -48,9 +51,11 @@ public class UserUnigram implements LanguageModel {
 			String[] tokens = tokenList.<String> toArray(new String[tokenList
 					.size()]);
 			ArrayList<String> words = new ArrayList<String>();
+
 			for (String str : tokens) {
 				words.add(str);
-				globalList.add(str);
+				if (globalList != null)
+					globalList.add(str);
 			}
 			return words;
 		}
@@ -63,12 +68,21 @@ public class UserUnigram implements LanguageModel {
 			wordCounter.incrementCount(curGram, 1.0);
 		}
 
-		wordCounter.normalize();
+		currentCounter = new Counter<String>();
+		/** Add one smoothing */
+		for (Entry<String, Double> e : wordCounter.getEntrySet()) {
+			currentCounter.setCount(e.getKey(), e.getValue() + 1);
+		//	System.out.println(e.getValue() + 1);
+		}
+		currentCounter.incrementCount(UNK, 1);
+		currentCounter.normalize();
+		//System.out.println("counter size:"+wordCounter.size());
 
 	}
 
 	public UserUnigram() {
 		wordCounter = new Counter<String>();
+
 		stopwords = readStopwords();
 	}
 
@@ -105,7 +119,10 @@ public class UserUnigram implements LanguageModel {
 		// TODO Auto-generated method stub
 		double likelihood = 1;
 		for (String word : words) {
-			likelihood += Math.log(wordCounter.getCount(word));
+			if (currentCounter.containsKey(word))
+				likelihood += Math.log(currentCounter.getCount(word));
+			else
+				likelihood += Math.log(currentCounter.getCount(UNK));
 		}
 		return -likelihood;
 	}

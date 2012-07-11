@@ -135,11 +135,9 @@ public class Classify {
 
 	private static void initializePaths() {
 		slash = System.getProperty("file.separator");
-		String path = Thread.currentThread().getContextClassLoader()
-				.getResource(".").getPath();
+		String path = System.getProperty("user.dir");
 		// System.out.println(slash);
-		basePath = path.replaceAll("nudge_java" + slash, "").replaceAll(
-				"bin" + slash, "");
+		basePath = path.replaceAll("nudge_java", "");
 		basePath += "data" + slash;
 		// System.out.println(basePath);
 

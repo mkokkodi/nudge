@@ -137,7 +137,7 @@ public class Classify {
 		slash = System.getProperty("file.separator");
 		String path = System.getProperty("user.dir");
 		// System.out.println(slash);
-		basePath = path.replaceAll("nudge_java", "");
+		basePath = path.replaceAll("nudge_java", "").replaceAll("lib", "");
 		basePath += "data" + slash;
 		// System.out.println(basePath);
 

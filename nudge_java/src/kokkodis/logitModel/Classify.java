@@ -40,9 +40,10 @@ public class Classify {
 	public static String Cstr;
 	public static String interceptStr;
 	public static String jobType;
+	public static HashMap<String, String> intToCat;
+	public static String[] features;
 
 	private static double intercept = 0;
-	public static String[] features;
 
 	/* Flags */
 	private static boolean createFiles = false;
@@ -66,10 +67,8 @@ public class Classify {
 
 	public static void main(String[] args) {
 
-		initializePaths();
-
 		if (args.length > 0) {
-
+			initialize();
 			if (args[0].contains("-h"))
 				printHelp();
 			else {
@@ -111,7 +110,7 @@ public class Classify {
 					else if (args[i].contains("-hourly"))
 						hourly = true;
 				}
-				if (!fixed && !hourly) {
+				if (!fixed && !hourly && !createFiles) {
 					System.out.println("You have to specify whether you want "
 							+ "to build models for hourly (-hourly) or "
 							+ "for fixed (-fixed) types of jobs.");
@@ -168,9 +167,10 @@ public class Classify {
 						System.out
 								.println("---------------------------------------------------------------");
 						System.out.println("Predictions stored in:"
-								+ "data/results/testSetProbs_" + currentSolver
-								+ "_C" + Cstr + "_I" + interceptStr + "_" + "_"
-								+ jobType + "_" + baseFile + ".csv");
+								+ "data/results/" + intToCat.get(baseFile)
+								+ "/testSetProbs_" + currentSolver + "_C"
+								+ Cstr + "_I" + interceptStr + "_" + jobType
+								+ ".csv");
 						System.out.println();
 					}
 					if (predict && fixed) {
@@ -183,9 +183,10 @@ public class Classify {
 						System.out
 								.println("---------------------------------------------------------------");
 						System.out.println("Predictions stored in:"
-								+ "data/results/testSetProbs_" + currentSolver
-								+ "_C" + Cstr + "_I" + interceptStr + "_" + "_"
-								+ jobType + "_" + baseFile + ".csv");
+								+ "data/results/" + intToCat.get(baseFile)
+								+ "/testSetProbs_" + currentSolver + "_C"
+								+ Cstr + "_I" + interceptStr + "_" + jobType
+								+ ".csv");
 						System.out.println();
 					}
 					if (verbal && hourly) {
@@ -232,7 +233,7 @@ public class Classify {
 
 	}
 
-	private static void initializePaths() {
+	private static void initialize() {
 		u = new Utils();
 		slash = System.getProperty("file.separator");
 		String path = System.getProperty("user.dir");
@@ -240,6 +241,16 @@ public class Classify {
 		basePath = path.replaceAll("nudge_java", "").replaceAll("lib", "");
 		basePath += "data" + slash;
 		// System.out.println(basePath);
+		intToCat = new HashMap<String, String>();
+		intToCat.put("10", "10_web_dev");
+		intToCat.put("20", "20_soft_dev");
+		intToCat.put("30", "30_net_is");
+		intToCat.put("40", "40_writing_translation");
+		intToCat.put("50", "50_admin_support");
+		intToCat.put("60", "60_design_mult");
+		intToCat.put("70", "70_cust_service");
+		intToCat.put("80", "80_sales_marketing");
+		intToCat.put("90", "90_bus_services");
 
 	}
 
@@ -371,9 +382,9 @@ public class Classify {
 		fileForProbAnalysis.writeToFile("probPositive,actual");
 
 		PrintToFile testProbabilities = new PrintToFile();
-		testProbabilities.openFile(basePath + "results/testSetProbs_"
-				+ currentSolver + "_C" + Cstr + "_I" + interceptStr + "_" + "_"
-				+ jobType + "_" + baseFile + ".csv");
+		testProbabilities.openFile(basePath + "results/"
+				+ intToCat.get(baseFile) + "/testSetProbs_" + currentSolver
+				+ "_C" + Cstr + "_I" + interceptStr + "_" + jobType + ".csv");
 		testProbabilities
 				.writeToFile("opening,contractor,Pr(hired),true_label");
 

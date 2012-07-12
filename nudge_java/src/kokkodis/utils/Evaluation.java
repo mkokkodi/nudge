@@ -61,8 +61,11 @@ public class Evaluation {
 
 	public void printAUCPoints(TreeSet<XYPair> xyData) {
 		PrintToFile pf = new PrintToFile();
-		pf.openFile(Classify.basePath + "results/" + Classify.currentSolver
-				+ "_aucPoints_C" + Classify.Cstr+"_"+ Classify.baseFile+".csv");
+		pf.openFile(Classify.basePath + "results/"
+				+ Classify.intToCat.get(Classify.baseFile) + "/"
+				+ Classify.currentSolver + "_aucPoints_C" + Classify.Cstr
+				+ "_I" + Classify.interceptStr + "_" + Classify.jobType
+				+ ".csv");
 		xyData.add(new XYPair(0, 0));
 		xyData.add(new XYPair(1, 1));
 		for (XYPair pair : xyData)

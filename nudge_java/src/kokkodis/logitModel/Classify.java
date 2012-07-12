@@ -1,32 +1,28 @@
 package kokkodis.logitModel;
 
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.ListIterator;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import org.postgresql.ds.common.BaseDataSource;
-
-import kokkodis.db.OdeskDBQueries;
 import kokkodis.factory.XYPair;
 import kokkodis.utils.Counter;
 import kokkodis.utils.Evaluation;
 import kokkodis.utils.PrintToFile;
 import kokkodis.utils.Utils;
 import kokkodis.utils.compare.XYPairComparator;
-import de.bwaldvogel.liblinear.FeatureNode;
 import de.bwaldvogel.liblinear.InvalidInputDataException;
 import de.bwaldvogel.liblinear.Linear;
 import de.bwaldvogel.liblinear.Model;
 import de.bwaldvogel.liblinear.Parameter;
 import de.bwaldvogel.liblinear.Problem;
 import de.bwaldvogel.liblinear.SolverType;
-import de.bwaldvogel.liblinear.Train;
 
 public class Classify {
 	public static String basePath; // =
@@ -36,12 +32,14 @@ public class Classify {
 													// "L2R_LR"//L2R_L1LOSS_SVC_DUAL
 													// ;L1R_LR
 
+	private static Utils u;
 	public static String baseFile = "10";
 
 	public static double randomProbPositive;
 	public static double C = 1;
 	public static String Cstr;
 	public static String interceptStr;
+	public static String jobType;
 
 	private static double intercept = 0;
 	public static String[] features;
@@ -54,6 +52,9 @@ public class Classify {
 	private static boolean showWeights = false;
 	private static String slash;
 	private static double eps = 0.0000001;
+	private static boolean computeAuc = false;
+	private static boolean hourly = false;
+	private static boolean fixed = false;
 
 	/**
 	 * @param args
@@ -73,7 +74,9 @@ public class Classify {
 				printHelp();
 			else {
 				for (int i = 0; i < args.length; i++) {
-					if (args[i].contains("-f")) {
+					if (args[i].contains("-fixed"))
+						fixed = true;
+					else if (args[i].contains("-f")) {
 						baseFile = args[i + 1];
 						i++;
 					} else if (args[i].contains("-s")) {
@@ -103,26 +106,122 @@ public class Classify {
 					} else if (args[i].contains("-e")) {
 						eps = Double.parseDouble(args[i + 1].trim());
 						i++;
-					}
+					} else if (args[i].contains("-AUC"))
+						computeAuc = true;
+					else if (args[i].contains("-hourly"))
+						hourly = true;
 				}
-				DecimalFormat myFormatter = new DecimalFormat("#.###");
-				Cstr = myFormatter.format(C);
-				interceptStr = myFormatter.format(intercept);
+				if (!fixed && !hourly) {
+					System.out.println("You have to specify whether you want "
+							+ "to build models for hourly (-hourly) or "
+							+ "for fixed (-fixed) types of jobs.");
 
-				System.out.println("Running file cat" + baseFile);
-				if (createFiles)
-					createDatasets();
-				if (buildModel)
-					buildModel();
+				} else {
+					DecimalFormat myFormatter = new DecimalFormat("#.###");
+					Cstr = myFormatter.format(C);
+					interceptStr = myFormatter.format(intercept);
 
-				if (predict)
-					predict();
-				if (verbal)
-					ProbabilisticAnalysis.doProbabilisticAnalysis();
+					if (createFiles) {
+						System.out
+								.println("Creating testing and training sets for category "
+										+ baseFile);
 
-				if (showWeights) {
-					indexFeatures();
-					printWeights();
+						createDatasets();
+						System.out
+								.println("Testing and training sets created. ");
+						System.out.println();
+					}
+					if (buildModel && hourly) {
+						jobType = "Hourly";
+						System.out.println("Building " + jobType + " Model...");
+
+						buildModel();
+						System.out
+								.println("---------------------------------------------------------------");
+						System.out
+								.println("Model built. Saved in :" + "model/"
+										+ currentSolver + "_C" + Cstr + "_I"
+										+ interceptStr + "_" + jobType + "_"
+										+ baseFile);
+						System.out.println();
+					}
+					if (buildModel && fixed) {
+						jobType = "Fixed";
+						System.out.println("Building " + jobType + " Model...");
+
+						buildModel();
+						System.out
+								.println("---------------------------------------------------------------");
+						System.out
+								.println("Model built. Saved in :" + "model/"
+										+ currentSolver + "_C" + Cstr + "_I"
+										+ interceptStr + "_" + jobType + "_"
+										+ baseFile);
+						System.out.println();
+					}
+
+					if (predict && hourly) {
+						jobType = "Hourly";
+						System.out
+								.println("---------------------------------------------------------------");
+						predict();
+						System.out
+								.println("---------------------------------------------------------------");
+						System.out.println("Predictions stored in:"
+								+ "data/results/testSetProbs_" + currentSolver
+								+ "_C" + Cstr + "_I" + interceptStr + "_" + "_"
+								+ jobType + "_" + baseFile + ".csv");
+						System.out.println();
+					}
+					if (predict && fixed) {
+						jobType = "Fixed";
+						System.out.println("Predicting instances in " + jobType
+								+ " test set.");
+						System.out
+								.println("---------------------------------------------------------------");
+						predict();
+						System.out
+								.println("---------------------------------------------------------------");
+						System.out.println("Predictions stored in:"
+								+ "data/results/testSetProbs_" + currentSolver
+								+ "_C" + Cstr + "_I" + interceptStr + "_" + "_"
+								+ jobType + "_" + baseFile + ".csv");
+						System.out.println();
+					}
+					if (verbal && hourly) {
+						jobType = "Hourly";
+						System.out
+								.println("Starting analyzing probabilities...");
+						System.out
+								.println("---------------------------------------------------------------");
+						ProbabilisticAnalysis.doProbabilisticAnalysis();
+						System.out
+								.println("---------------------------------------------------------------");
+						System.out.println();
+
+					}
+					if (verbal && fixed) {
+						jobType = "Fixed";
+						System.out
+								.println("Starting analyzing probabilities...");
+						System.out
+								.println("---------------------------------------------------------------");
+						ProbabilisticAnalysis.doProbabilisticAnalysis();
+						System.out
+								.println("---------------------------------------------------------------");
+						System.out.println();
+
+					}
+					if (showWeights && hourly) {
+						System.out.println("Printing weights for:" + basePath
+								+ "model/" + currentSolver + "_C" + Cstr + "_I"
+								+ interceptStr + "_" + "_" + jobType + "_"
+								+ baseFile);
+						System.out
+								.println("---------------------------------------------------------------");
+						indexFeatures();
+						printWeights();
+					}
 				}
 
 			}
@@ -134,6 +233,7 @@ public class Classify {
 	}
 
 	private static void initializePaths() {
+		u = new Utils();
 		slash = System.getProperty("file.separator");
 		String path = System.getProperty("user.dir");
 		// System.out.println(slash);
@@ -148,12 +248,17 @@ public class Classify {
 				+ "-s 		solver type: L1R_LR or L2R_LR  >>"
 				+ "-C		Penalty parameter (double) >>"
 				+ "-I		Intercept: 0 default. 1 for intercept. >>"
-				+ "-c		create training and test files (0.85 - 0.15, vertical on contractors) >>"
+				+ "-c		create training and test files "
+				+ "(0.85 - 0.15, vertical on contractors). Cretates training "
+				+ "and test files for both hourly and fixed  instances.>>"
 				+ "-b		Build model from training data. >>"
 				+ "-p		Load model and predict. >>"
 				+ "-v		Show probabilistic analysis >>"
-				+ "-w		print weights"
-				+ "-e		eps: difference between objective function to stop itearting. Default:0.0000001 ";
+				+ "-w		print weights >>"
+				+ "-e		eps: difference between objective function to stop itearting. Default:0.0000001 >>"
+				+ "-AUC		compute auc points: you can find them in ./results/ >>"
+				+ "-hourly		Builds, predicts, for hourly job-types data. >>"
+				+ "-fixed		Builds, predicts for fixed job-types data. ";
 		System.out.println("Parameters:");
 		System.out.println("---------------------------------------");
 		for (String str : s.split(">>"))
@@ -165,10 +270,8 @@ public class Classify {
 		try {
 			Model ml = Linear.loadModel(new File(basePath + "model/"
 					+ currentSolver + "_C" + Cstr + "_I" + interceptStr + "_"
-					+ baseFile));
-			System.out.println("Printing weights for:" + basePath + "model/"
-					+ currentSolver + "_C" + Cstr + "_I" + interceptStr + "_"
-					+ baseFile);
+					+ jobType + "_" + baseFile));
+
 			double[] w = ml.getFeatureWeights();
 			// System.out.print(baseFile);
 			TreeMap<Double, String> tm = new TreeMap<Double, String>(
@@ -188,7 +291,6 @@ public class Classify {
 			for (Entry<Double, String> e : tm.entrySet())
 				System.out.println(e.getValue() + " : " + e.getKey());
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
@@ -199,9 +301,9 @@ public class Classify {
 		try {
 
 			ml = Linear.loadModel(new File(basePath + "model/" + currentSolver
-					+ "_C" + Cstr + "_I" + interceptStr + "_" + baseFile));
+					+ "_C" + Cstr + "_I" + interceptStr + "_" + jobType + "_"
+					+ baseFile));
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		if (ml.isProbabilityModel()) {
@@ -247,22 +349,43 @@ public class Classify {
 		Counter<String> errorAnalysis = new Counter<String>();
 
 		Evaluation eval = new Evaluation();
-		/* For AUC intatiate XYPair. */
-		TreeSet<XYPair> xyData = new TreeSet<XYPair>(new XYPairComparator());
-		HashMap<Double, Counter<String>> errorCounters = new HashMap<Double, Counter<String>>();
-		for (double th = 0.1; th < 0.95; th += 0.05) {
-			errorCounters.put(th, new Counter<String>());
 
+		/* For AUC intatiate XYPair. */
+		TreeSet<XYPair> xyData = null;
+		HashMap<Double, Counter<String>> errorCounters = new HashMap<Double, Counter<String>>();
+		if (computeAuc) {
+			xyData = new TreeSet<XYPair>(new XYPairComparator());
+			for (double th = 0.1; th < 0.95; th += 0.05) {
+				errorCounters.put(th, new Counter<String>());
+
+			}
 		}
 		/* end */
-		// System.out.println("Predicting...");
-		PrintToFile pf = new PrintToFile();
-		pf.openFile(basePath + "probs/prob_" + currentSolver + "_C" + Cstr
-				+ "_I" + interceptStr + "_" + baseFile + ".csv");
-		pf.writeToFile("probPositive,actual");
 
-		Problem problem = loadProblem("testData/test" + baseFile + ".txt");
+		// System.out.println("Predicting...");
+		PrintToFile fileForProbAnalysis = new PrintToFile();
+
+		fileForProbAnalysis.openFile(basePath + "probs/prob_" + currentSolver
+				+ "_C" + Cstr + "_I" + interceptStr + "_" + jobType + "_"
+				+ baseFile + ".csv");
+		fileForProbAnalysis.writeToFile("probPositive,actual");
+
+		PrintToFile testProbabilities = new PrintToFile();
+		testProbabilities.openFile(basePath + "results/testSetProbs_"
+				+ currentSolver + "_C" + Cstr + "_I" + interceptStr + "_" + "_"
+				+ jobType + "_" + baseFile + ".csv");
+		testProbabilities
+				.writeToFile("opening,contractor,Pr(hired),true_label");
+
+		Problem problem = loadProblem("testData/test" + jobType + baseFile
+				+ ".txt");
+
+		ArrayList<ProbHolder> testHolder = u.loadHolders(basePath
+				+ "testData/test" + jobType + "Holder" + baseFile + ".csv");
+		ListIterator<ProbHolder> it = testHolder.listIterator();
 		for (int i = 0; i < problem.x.length; i++) {
+			ProbHolder tempHolder = it.next();
+
 			int prediction = Linear.predict(ml, problem.x[i]);
 			int actual = problem.y[i];
 			eval.updateEvaluation(errorAnalysis, prediction, actual);
@@ -271,58 +394,69 @@ public class Classify {
 			// probEstimates[1] is the probability of being 1, the probability
 			// of being positive.
 			Linear.predictProbability(ml, problem.x[i], probEstimates);
-			pf.writeToFile(probEstimates[1] + "," + actual);
+			testProbabilities.writeToFile(tempHolder.getOpening() + ","
+					+ tempHolder.getConractor() + "," + probEstimates[1] + ","
+					+ actual);
+			fileForProbAnalysis.writeToFile(probEstimates[1] + "," + actual);
 			// for(int k=0; k<probEstimates.length; k++)
 			// System.out.println(k+" "+probEstimates[k]);
-			for (double th = 0.1; th < 0.95; th += 0.05) {
-				eval.updateEvaluation(errorCounters.get(th), probEstimates[1],
-						th, actual);
-
+			if (computeAuc) {
+				for (double th = 0.1; th < 0.95; th += 0.05) {
+					eval.updateEvaluation(errorCounters.get(th),
+							probEstimates[1], th, actual);
+				}
 			}
 
 		}
-		pf.closeFile();
+
+		fileForProbAnalysis.closeFile();
 		double positiveInstances = errorAnalysis.getCount("TP")
 				+ errorAnalysis.getCount("FN");
 		double negativeInstances = errorAnalysis.getCount("FP")
 				+ errorAnalysis.getCount("TN");
 
-		System.out.println("majorityClass:"
+		System.out.println();
+		System.out.println("Accuracies:");
+		System.out.println("Baseline (major class):"
 				+ Math.max(positiveInstances, negativeInstances)
 				/ (positiveInstances + negativeInstances));
 		double acc = (errorAnalysis.getCount("TP") + errorAnalysis
 				.getCount("TN")) / errorAnalysis.totalCount();
-		System.out.println("Our model's acc:" + acc);
+		System.out.println(currentSolver + " (current model):" + acc);
+		System.out.println();
+		System.out.println("Confusion Matrix:");
+		System.out.println("-------------------------");
 		System.out.println("       |     Actual    | ");
-		System.out.println("------ |   +   |   -   | ");
+		System.out.println("-------------------------");
+		System.out.println("       |   +   |   -   | ");
 		System.out.println("  +    | " + (int) errorAnalysis.getCount("TP")
 				+ " | " + (int) errorAnalysis.getCount("FP") + " | ");
 		System.out.println("  -    | " + (int) errorAnalysis.getCount("FN")
 				+ " | " + (int) errorAnalysis.getCount("TN") + " | ");
+		System.out.println("-------------------------");
+		System.out.println();
 
-		/* for AUC */
-		for (double th = 0.1; th < 0.95; th += 0.05) {
-			Counter<String> curCounter = errorCounters.get(th);
-			eval.calculateRates(curCounter);
-			xyData.add(new XYPair(curCounter.getCount("FPRate"), curCounter
-					.getCount("TPRate")));
-		}
-		// System.out.println("AUC:" + eval.calculateAUC(xyData));
 		double baseline = Math.max(positiveInstances, negativeInstances)
 				/ (positiveInstances + negativeInstances);
 		randomProbPositive = 1 - baseline;
-		/*
-		 * System.out.println(baseFile+","+baseline+","+acc+","+eval.calculateAUC
-		 * (xyData)+","
-		 * +errorAnalysis.getCount("TP")+","+errorAnalysis.getCount("FP")+","
-		 * +errorAnalysis.getCount("TN")+","+errorAnalysis.getCount("FN"));
-		 */
-		System.out.println("AUC:" + eval.calculateAUC(xyData));
-		eval.printAUCPoints(xyData);
+		/* for AUC */
+		if (computeAuc) {
+			for (double th = 0.1; th < 0.95; th += 0.05) {
+				Counter<String> curCounter = errorCounters.get(th);
+				eval.calculateRates(curCounter);
+				xyData.add(new XYPair(curCounter.getCount("FPRate"), curCounter
+						.getCount("TPRate")));
+			}
+			System.out.println("AUC:" + eval.calculateAUC(xyData));
+			eval.printAUCPoints(xyData);
+		}
+		testProbabilities.closeFile();
 	}
 
 	private static void buildModel() {
-		Problem problem = loadProblem("trainData/train" + baseFile + ".txt");
+
+		Problem problem = loadProblem("trainData/train" + jobType + baseFile
+				+ ".txt");
 
 		Parameter p = new Parameter(getSolverType(), C, eps);
 		Model ml = Linear.train(problem, p);
@@ -334,9 +468,10 @@ public class Classify {
 
 		try {
 			Linear.saveModel(new File(basePath + "model/" + currentSolver
-					+ "_C" + Cstr + "_I" + interceptStr + "_" + baseFile), ml);
+					+ "_C" + Cstr + "_I" + interceptStr + "_" + jobType + "_"
+					+ baseFile), ml);
+
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		/*
@@ -366,27 +501,24 @@ public class Classify {
 		Problem problem = null;
 		try {
 			// problem = Problem.readFromFile(q.createTestFile(), 1);
-			System.out.println("Loading");
+			System.out.println("Loading file " + file);
 			problem = Problem
 					.readFromFile(new File(basePath + file), intercept);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (InvalidInputDataException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return problem;
 	}
 
 	private static void createDatasets() {
-		Utils u = new Utils();
 		u.createTrainTest("cat" + baseFile + ".csv", baseFile);
 
 	}
 
 	private static void indexFeatures() {
-		Utils u = new Utils();
+
 		features = u.getFeatures();
 
 	}

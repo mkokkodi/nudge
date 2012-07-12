@@ -21,7 +21,9 @@ public class ProbabilisticAnalysis {
 		try {
 			BufferedReader input = new BufferedReader(new FileReader(new File(
 					Classify.basePath + "probs/prob" + "_"
-							+ Classify.currentSolver + "_C" + Classify.Cstr+"_I"+Classify.interceptStr+"_"+ Classify.baseFile
+							+ Classify.currentSolver + "_C" + Classify.Cstr
+							+ "_I" + Classify.interceptStr + "_"
+							+ Classify.jobType + "_" + Classify.baseFile
 							+ ".csv")));
 			String line;
 			line = input.readLine();
@@ -38,13 +40,15 @@ public class ProbabilisticAnalysis {
 			System.out.println(i + " tm.size:" + ts.size());
 
 			PrintToFile pf = new PrintToFile();
-			pf.openFile(Classify.basePath + "/probs/" + Classify.currentSolver +"_"+Classify.C
-					+ "_probsComparison_" + Classify.baseFile + ".csv");
+			pf.openFile(Classify.basePath + "/probs/" + Classify.currentSolver
+					+ "_" + Classify.C + "_probsComparison_" + Classify.jobType
+					+ "_" + Classify.baseFile + ".csv");
 			pf.writeToFile("Pr(predicted_positive>threshold), Total_predictions, Pr(actual_positive)");
 
 			PrintToFile liftsFile = new PrintToFile();
-			liftsFile.openFile(Classify.basePath + "/probs/" + Classify.currentSolver +"_"+Classify.C
-					+ "_lift_" + Classify.baseFile + ".csv");
+			liftsFile.openFile(Classify.basePath + "/probs/"
+					+ Classify.currentSolver + "_" + Classify.C + "_lift_"
+					+ Classify.jobType + "_" + Classify.baseFile + ".csv");
 			liftsFile.writeToFile("Predicted_prob_gt, lift");
 			for (double th = 0.95; th > 0; th -= 0.05) {
 				double positive = 0;
@@ -60,12 +64,11 @@ public class ProbabilisticAnalysis {
 					double actualProb = positive / total;
 					DecimalFormat myFormatter = new DecimalFormat("#.###");
 					String prc = myFormatter.format(actualProb);
-					String thr = myFormatter.format(th+0.025);
-					double lift = actualProb
-							/ Classify.randomProbPositive;
+					String thr = myFormatter.format(th + 0.025);
+					double lift = actualProb / Classify.randomProbPositive;
 					System.out.println("Threshold:" + thr + " Total:" + total
 							+ " Positives:" + positive + " Actual Percentage:"
-							+ prc +" Lift:"+lift );
+							+ prc + " Lift:" + lift);
 					pf.writeToFile(thr + "," + (int) total + "," + prc);
 
 					liftsFile.writeToFile(th + "," + lift);
@@ -75,7 +78,7 @@ public class ProbabilisticAnalysis {
 			pf.closeFile();
 			liftsFile.closeFile();
 			// for (ProbHolder ph : ts)
-				// System.out.println(ph.getProb() + ":" + ph.getLabel());
+			// System.out.println(ph.getProb() + ":" + ph.getLabel());
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

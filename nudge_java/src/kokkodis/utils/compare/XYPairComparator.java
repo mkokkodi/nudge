@@ -2,8 +2,8 @@ package kokkodis.utils.compare;
 
 import java.util.Comparator;
 
-import kokkodis.factory.XYPair;
 import kokkodis.utils.Counter;
+import kokkodis.utils.XYPair;
 
 public class XYPairComparator implements Comparator<XYPair> {
 

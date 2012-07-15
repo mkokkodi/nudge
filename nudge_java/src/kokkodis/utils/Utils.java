@@ -4,25 +4,20 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.concurrent.ArrayBlockingQueue;
+import java.util.Map.Entry;
 
 import kokkodis.logitModel.Classify;
-import kokkodis.logitModel.ProbHolder;
-import kokkodis.probInterview.dataClasses.Contractor;
+import kokodis.holders.ContractorHolder;
+import kokodis.holders.ProbHolder;
 
 public class Utils {
 
 	private boolean labelIsZero = false; // boolean to make sure that the
 
 	private HashMap<String, Integer> locationToNominal = new HashMap<String, Integer>();
-	private HashMap<String, Double> contractorCoversLMscores = new HashMap<String, Double>();
-	private HashMap<String, Double> contractorJobsLMscores = new HashMap<String, Double>();
 
 	private int locationIndex = 0;
 
@@ -60,28 +55,43 @@ public class Utils {
 	}
 
 	public void createTrainTest(String inFile, String cat) {
-		PrintToFile trainHourly = new PrintToFile();
-		trainHourly.openFile(Classify.basePath + "trainData/trainHourly" + cat
-				+ ".txt");
-		PrintToFile trainFixed = new PrintToFile();
-		trainFixed.openFile(Classify.basePath + "trainData/trainFixed" + cat
-				+ ".txt");
 
-		PrintToFile testHourly = new PrintToFile();
-		testHourly.openFile(Classify.basePath + "testData/testHourly" + cat
-				+ ".txt");
-		PrintToFile testFixed = new PrintToFile();
-		testFixed.openFile(Classify.basePath + "testData/testFixed" + cat
-				+ ".txt");
+		/* train sets */
 
-		PrintToFile testHourlyInstance = new PrintToFile();
-		testHourlyInstance.openFile(Classify.basePath
-				+ "testData/testHourlyHolder" + cat + ".csv");
-		testHourlyInstance.writeToFile("opening,contractor");
-		PrintToFile testFixedInstance = new PrintToFile();
-		testFixedInstance.openFile(Classify.basePath
-				+ "testData/testFixedHolder" + cat + ".csv");
-		testFixedInstance.writeToFile("opening,contractor");
+		HashMap<String, PrintToFile> filesMap = new HashMap<String, PrintToFile>();
+
+		filesMap.put("trainHourly", new PrintToFile());
+		filesMap.put("trainFixed", new PrintToFile());
+
+		/* test sets */
+
+		filesMap.put("testHourlyNewClients", new PrintToFile());
+		filesMap.put("testHourlyMixedClients", new PrintToFile());
+		filesMap.put("testFixedNewClients", new PrintToFile());
+		filesMap.put("testFixedMixedClients", new PrintToFile());
+
+		filesMap.put("testHolderHourlyNewClients", new PrintToFile());
+		filesMap.put("testHolderHourlyMixedClients", new PrintToFile());
+		filesMap.put("testHolderFixedNewClients", new PrintToFile());
+		filesMap.put("testHolderFixedMixedClients", new PrintToFile());
+
+		for (Entry<String, PrintToFile> e : filesMap.entrySet()) {
+			if (e.getKey().contains("train"))
+				e.getValue().openFile(
+						Classify.basePath + "trainData/" + e.getKey() + cat
+								+ Classify.removedFeat + ".txt");
+
+			else if (e.getKey().contains("Holder")) {
+				e.getValue().openFile(
+						Classify.basePath + "testData/" + e.getKey() + cat
+								+ Classify.removedFeat + ".csv");
+				e.getValue().writeToFile("opening,contractor");
+			} else {
+				e.getValue().openFile(
+						Classify.basePath + "testData/" + e.getKey() + cat
+								+ Classify.removedFeat + ".txt");
+			}
+		}
 
 		try {
 			BufferedReader input = new BufferedReader(new FileReader(
@@ -89,11 +99,11 @@ public class Utils {
 			String line;
 			line = input.readLine();
 
-			HashSet<String> testingHourlyContractors = new HashSet<String>();
-			HashSet<String> trainingHourlyContractors = new HashSet<String>();
-
-			HashSet<String> testingFixedContractors = new HashSet<String>();
-			HashSet<String> trainingFixedContractors = new HashSet<String>();
+			HashMap<String, ContractorHolder> contractors = new HashMap<String, ContractorHolder>();
+			HashSet<String> trainingClientsHourly = new HashSet<String>();
+			HashSet<String> newClientsHourly = new HashSet<String>();
+			HashSet<String> trainingClientsFixed = new HashSet<String>();
+			HashSet<String> newClientsFixed = new HashSet<String>();
 
 			while ((line = input.readLine()) != null) {
 
@@ -103,61 +113,107 @@ public class Utils {
 				for (int i = 0; i < tmpAr.length; i++)
 					tmpAr[i] = tmpAr[i].replaceAll("\"", "");
 
-				String contractor = tmpAr[2].trim();
-				String opening = tmpAr[1].trim();
+				String contractorStr = tmpAr[2].trim();
+
+				ContractorHolder contractor = contractors.get(contractorStr);
+				if (contractor == null) {
+					contractor = new ContractorHolder();
+					contractors.put(contractorStr, contractor);
+				}
 
 				/* Hourly */
 				if (tmpAr[0].trim().equals("Hourly")) {
-					if (trainingHourlyContractors.contains(contractor))
-						createInstance(trainHourly, tmpAr, contractor);
-					else if (testingHourlyContractors.contains(contractor)) {
-						createInstance(testHourly, tmpAr, contractor);
-						testHourlyInstance.writeToFile(opening + ","
-								+ contractor);
-					} else {
-						if (Math.random() < 0.85) {
-							trainingHourlyContractors.add(contractor);
-							createInstance(trainHourly, tmpAr, contractor);
-						} else {
-							testingHourlyContractors.add(contractor);
-							createInstance(testHourly, tmpAr, contractor);
-							testHourlyInstance.writeToFile(opening + ","
-									+ contractor);
-
-						}
-					}
+					createFiles("Hourly", trainingClientsHourly,
+							newClientsHourly, tmpAr, filesMap, contractor);
 				}
 				/* Fixed */
 				else {
-					if (trainingFixedContractors.contains(contractor))
-						createInstance(trainFixed, tmpAr, contractor);
-					else if (testingFixedContractors.contains(contractor)) {
-						createInstance(testFixed, tmpAr, contractor);
-						testFixedInstance.writeToFile(opening + ","
-								+ contractor);
-					} else {
-						if (Math.random() < 0.85) {
-							trainingFixedContractors.add(contractor);
-							createInstance(trainFixed, tmpAr, contractor);
-						} else {
-							testingFixedContractors.add(contractor);
-							createInstance(testFixed, tmpAr, contractor);
-							testFixedInstance.writeToFile(opening + ","
-									+ contractor);
+					createFiles("Fixed", trainingClientsFixed, newClientsFixed,
+							tmpAr, filesMap, contractor);
 
-						}
-					}
 				}
 
 			}
-			System.out.println("File created.");
-			trainHourly.closeFile();
-			testHourly.closeFile();
-			testHourlyInstance.closeFile();
-			trainFixed.closeFile();
-			testFixed.closeFile();
-			testFixedInstance.closeFile();
 		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		for (Entry<String, PrintToFile> e : filesMap.entrySet()) {
+			System.out.println("File " + e.getKey() + " created.");
+		}
+	}
+
+	private void createFiles(String jobType, HashSet<String> trainingClients,
+			HashSet<String> newClients, String[] tmpAr,
+			HashMap<String, PrintToFile> filesMap, ContractorHolder contractor) {
+
+		String opening = tmpAr[1].trim();
+		String client = tmpAr[37].trim();
+
+		if (trainingClients.contains(client)) {
+			if (Math.random() < 0.9) { /*
+										 * test set 0.9*0.85 = 0.765 (of
+										 * clients)
+										 */
+				createInstance(filesMap.get("train" + jobType), tmpAr,
+						contractor);
+			} else { /* mixed test = 0.1 * 0.85 = 0.085 of clients */
+				createInstance(filesMap.get("test" + jobType + "MixedClients"),
+						tmpAr, contractor);
+				filesMap.get("testHolder" + jobType + "MixedClients")
+						.writeToFile(opening + "," + contractor);
+			}
+		} else if (newClients.contains(client)) { /*
+												 * clean test = 0.15 of clients
+												 */
+			createInstance(filesMap.get("test" + jobType + "NewClients"),
+					tmpAr, contractor);
+			filesMap.get("testHolder" + jobType + "NewClients").writeToFile(
+					opening + "," + contractor);
+			if (Math.random() <= 0.43) { /*
+										 * 0.43 * 0.15 = 0.065 of clients in
+										 * mixed
+										 */
+				createInstance(filesMap.get("test" + jobType + "MixedClients"),
+						tmpAr, contractor);
+				filesMap.get("testHolder" + jobType + "MixedClients")
+						.writeToFile(opening + "," + contractor);
+			}
+		} else {
+			if (Math.random() < 0.85) {
+				trainingClients.add(client);
+				if (Math.random() < 0.9) { /*
+											 * test set 0.9*0.85 = 0.765 (of
+											 * clients)
+											 */
+					createInstance(filesMap.get("train" + jobType), tmpAr,
+							contractor);
+				} else { /*
+						 * mixed test = 0.1 * -.85 = 0.085 of clients
+						 */
+					createInstance(
+							filesMap.get("test" + jobType + "MixedClients"),
+							tmpAr, contractor);
+					filesMap.get("testHolder" + jobType + "MixedClients")
+							.writeToFile(opening + "," + contractor);
+				}
+			} else {
+				newClients.add(client);
+				createInstance(filesMap.get("test" + jobType + "NewClients"),
+						tmpAr, contractor);
+				filesMap.get("testHolder" + jobType + "NewClients")
+						.writeToFile(opening + "," + contractor);
+				if (Math.random() <= 0.43) { /*
+											 * 0.43 * 0.15 = 0.065 of lients in
+											 * mixed
+											 */
+					createInstance(
+							filesMap.get("test" + jobType + "MixedClients"),
+							tmpAr, contractor);
+					filesMap.get("testHolder" + jobType + "MixedClients")
+							.writeToFile(opening + "," + contractor);
+
+				}
+			}
 		}
 	}
 
@@ -174,13 +230,14 @@ public class Utils {
 	 * -> 26 "pref_test" -> 27 "pref_odesk_hours" -> 28 "pref_has_portfolio" ->
 	 * 29, "number_prev_openings" -> 30 "contr_timezone" -> 31 "client_timezone"
 	 * -> 32 " "cover_unigram_score" -> 33 , "order of
-	 * application" -> 34,"client_country" -> 35, "job_unigram_score" ->36
+	 * application" -> 34,"client_country" -> 35, "job_unigram_score" ->36,
+	 * client ->37
 	 * 
 	 * @param tmpAr
 	 * @param contractor
 	 */
 	private void createInstance(PrintToFile pf, String[] tmpAr,
-			String contractor) {
+			ContractorHolder contractor) {
 
 		String instance = "";
 		int label = -1;
@@ -206,12 +263,14 @@ public class Utils {
 
 		index++;
 
-		if (tmpAr[6].trim().length() > 0) {
+		if (!Classify.featuresToRemove.contains(index)
+				&& tmpAr[6].trim().length() > 0) {
 			double hourlyRate = Double.parseDouble(tmpAr[6]);
 			if (hourlyRate < 500 && hourlyRate > 0)
 				instance += " " + index + ":" + (hourlyRate);// / 500;
 
-		} else if (tmpAr[11].trim().length() > 0) {
+		} else if (!Classify.featuresToRemove.contains(index)
+				&& tmpAr[11].trim().length() > 0) {
 			double hourlyRate = Double.parseDouble(tmpAr[11]);
 			if (hourlyRate < 500 && hourlyRate > 0)
 				instance += " " + index + ":" + (hourlyRate);
@@ -219,39 +278,45 @@ public class Utils {
 		}
 
 		index++;
-		if (tmpAr[7].trim().length() > 0) {
+		if (!Classify.featuresToRemove.contains(index)
+				&& tmpAr[7].trim().length() > 0) {
 			double availHours = Double.parseDouble(tmpAr[7].trim());
 			if (availHours < 100 && availHours > 0)
 				instance += " " + index + ":" + availHours; // / 100);
 		}
 		index++;
 
-		if (tmpAr[12].trim().length() > 0) {
+		if (!Classify.featuresToRemove.contains(index)
+				&& tmpAr[12].trim().length() > 0) {
 			double totalTests = Double.parseDouble(tmpAr[12].trim());
 			if (totalTests < 40 && totalTests > 0)
 				instance += " " + index + ":" + totalTests;
 		}
 		index++;
-		if (tmpAr[13].trim().length() > 0) {
+		if (!Classify.featuresToRemove.contains(index)
+				&& tmpAr[13].trim().length() > 0) {
 			double yrExps = Double.parseDouble(tmpAr[13].trim());
 			if (yrExps < 40 && yrExps > 0)
 				instance += " " + index + ":" + yrExps;
 		}
 		index++;
 
-		if (tmpAr[14].trim().length() > 0) {
+		if (!Classify.featuresToRemove.contains(index)
+				&& tmpAr[14].trim().length() > 0) {
 			double noOfQuals = Double.parseDouble(tmpAr[14].trim());
 			if (noOfQuals < 100 && noOfQuals > 0)
 				instance += " " + index + ":" + noOfQuals;
 		}
 		index++;
-		if (tmpAr[15].trim().length() > 0) {
+		if (!Classify.featuresToRemove.contains(index)
+				&& tmpAr[15].trim().length() > 0) {
 			double totalHours = Double.parseDouble(tmpAr[15].trim());
 			if (totalHours < 10000 && totalHours > 0)
 				instance += " " + index + ":" + totalHours;
 		}
 		index++;
-		if (tmpAr[16].trim().length() > 0) {
+		if (!Classify.featuresToRemove.contains(index)
+				&& tmpAr[16].trim().length() > 0) {
 			adjustedScore = Double.parseDouble(tmpAr[16].trim());
 			if (adjustedScore > 0 && adjustedScore <= 5)
 				instance += " " + index + ":" + adjustedScore;
@@ -259,36 +324,25 @@ public class Utils {
 
 		index++;
 
-		if (tmpAr[17].trim().length() > 0) {
+		if (!Classify.featuresToRemove.contains(index)
+				&& tmpAr[17].trim().length() > 0) {
 			double adjustedScoreRecent = Double.parseDouble(tmpAr[17].trim());
 			if (adjustedScoreRecent > 0 && adjustedScoreRecent <= 5)
 				instance += " " + index + ":" + adjustedScoreRecent;
 		}
 		index++;
 
-		if (tmpAr[18].trim().length() > 0) {
+		if (!Classify.featuresToRemove.contains(index)
+				&& tmpAr[18].trim().length() > 0) {
 			double totalLast90Days = Double.parseDouble(tmpAr[18].trim());
 			if (totalLast90Days > 0 && totalLast90Days < 10000)
 				instance += " " + index + ":" + totalLast90Days;
 		}
 		index++;
-		/*
-		 * if (tmpAr[20].trim().length() > 0 && tmpAr[9].trim().length() > 0) {
-		 * double starDate = Double.parseDouble(tmpAr[20].trim()); double apDate
-		 * = Double.parseDouble(tmpAr[9].trim());
-		 * 
-		 * instance += " " + index + ":" + (starDate - apDate); } index++;
-		 */
-		// if (tmpAr[20].trim().length() > 0) {
-		// double prcSkills = Double.parseDouble(tmpAr[20].trim());
-		// if (prcSkills >= 0 && prcSkills <= 1)
-		// instance += " " + index + ":" + prcSkills;
-		// }
-		// else
-		// instance += " " + index + ":0";
-		index++;
 
-		if (tmpAr[21].trim().length() > 0 && englishScore != -1) {
+
+		if (!Classify.featuresToRemove.contains(index)
+				&& tmpAr[21].trim().length() > 0 && englishScore != -1) {
 			double prefEnglishScore = Double.parseDouble(tmpAr[21].trim());
 			if (prefEnglishScore > 0)
 				instance += " " + index + ":"
@@ -299,7 +353,8 @@ public class Utils {
 		index++;
 
 		/*****/
-		if (tmpAr[22].trim().length() > 0 && adjustedScore != -1) {
+		if (!Classify.featuresToRemove.contains(index)
+				&& tmpAr[22].trim().length() > 0 && adjustedScore != -1) {
 			double prefFeedbackcore = Double.parseDouble(tmpAr[22].trim());
 			if (prefFeedbackcore > 0)
 				instance += " " + index + ":"
@@ -310,24 +365,17 @@ public class Utils {
 		index++;
 		/*****/
 
-		if (tmpAr[23].trim().length() > 0) {
+		if (!Classify.featuresToRemove.contains(index)
+				&& tmpAr[23].trim().length() > 0) {
 			double prcInterviewed = Double.parseDouble(tmpAr[23].trim());
 			instance += " " + index + ":" + prcInterviewed;
 		}
 
 		index++;
 
-		Integer curLocation = null;
-		String curCountry = tmpAr[10];
-		if (curCountry != null && curCountry != "") {
-			curLocation = locationToNominal.get(curCountry);
-			if (curLocation == null) {
-				locationIndex++;
-				locationToNominal.put(curCountry, locationIndex);
-			}
-		}
 
-		if (tmpAr[31].length() > 0 && tmpAr[32].length() > 0) {
+		if (!Classify.featuresToRemove.contains(index)
+				&& tmpAr[31].length() > 0 && tmpAr[32].length() > 0) {
 			int t1 = 0;
 			int t2 = 0;
 			try {
@@ -356,33 +404,46 @@ public class Utils {
 
 		index++;
 
-		if (curLocation != null)
+
+		Integer curLocation = null;
+		String curCountry = tmpAr[10];
+		if (curCountry != null && curCountry != "") {
+			curLocation = locationToNominal.get(curCountry);
+			if (curLocation == null) {
+				locationIndex++;
+				locationToNominal.put(curCountry, locationIndex);
+			}
+		}
+		if (!Classify.featuresToRemove.contains(index) && curLocation != null)
 			instance += " " + index + ":" + curLocation;
 		index++;
 
-		Double prevScore = contractorCoversLMscores.get(contractor);
-		if (prevScore == null) {
-			if (tmpAr[33].trim().length() > 0) {
+		Double prevScore = contractor.getCoverLM();
+		if (prevScore == -1) {
+			if (!Classify.featuresToRemove.contains(index)
+					&& tmpAr[33].trim().length() > 0) {
 				double loglm = Double.parseDouble(tmpAr[33].trim());
 				if (loglm > 0) {
 
-					contractorCoversLMscores.put(contractor, loglm);
+					contractor.setCoverLM(loglm);
 				}
 			}
-		} else if (tmpAr[33].trim().length() > 0) {
+		} else if (!Classify.featuresToRemove.contains(index)
+				&& tmpAr[33].trim().length() > 0) {
 
 			double loglm = Double.parseDouble(tmpAr[33].trim());
 			if (loglm > 0) {
-				contractorCoversLMscores.put(contractor, loglm);
 				loglm = Math.abs(loglm - prevScore)
 						/ Math.max(loglm, prevScore);
 				instance += " " + index + ":" + loglm;
+				contractor.setCoverLM(loglm);
 
 			}
 		}
 		index++;
 
-		if (tmpAr[33].trim().length() > 0) {
+		if (!Classify.featuresToRemove.contains(index)
+				&& tmpAr[33].trim().length() > 0) {
 
 			double loglm = Double.parseDouble(tmpAr[33].trim());
 			if (loglm > 0)
@@ -390,7 +451,8 @@ public class Utils {
 		}
 		index++;
 
-		if (tmpAr[34].trim().length() > 0) {
+		if (!Classify.featuresToRemove.contains(index)
+				&& tmpAr[34].trim().length() > 0) {
 			double order = Double.parseDouble(tmpAr[34].trim());
 
 			instance += " " + index + ":" + order;
@@ -407,41 +469,47 @@ public class Utils {
 			}
 		}
 
-		if (curClientLocation != null)
+		if (!Classify.featuresToRemove.contains(index)
+				&& curClientLocation != null)
 			instance += " " + index + ":" + curClientLocation;
 
 		index++;
 
-		if (curLocation != null && curClientLocation != null)
+		if (!Classify.featuresToRemove.contains(index) && curLocation != null
+				&& curClientLocation != null)
 			instance += " " + index + ":"
 					+ ((curClientLocation == curLocation) ? 0 : 1);
 
 		index++;
-		if (tmpAr[29].trim().length() > 0) {
+		if (!Classify.featuresToRemove.contains(index)
+				&& tmpAr[29].trim().length() > 0) {
 			double portfolio = ((tmpAr[29].trim().equals("t")) ? 1 : 0);
 			instance += " " + index + ":" + portfolio;
 		}
 		index++;
-		if (tmpAr[30].trim().length() > 0) {
+		if (!Classify.featuresToRemove.contains(index)
+				&& tmpAr[30].trim().length() > 0) {
 			double prevOpenings = Double.parseDouble(tmpAr[30].trim());
 			if (prevOpenings > 0 && prevOpenings < 1000)
 				instance += " " + index + ":" + prevOpenings;
 		}
 		index++;
-		Double prevJobScore = contractorJobsLMscores.get(contractor);
-		if (prevJobScore == null) {
-			if (tmpAr[36].trim().length() > 0) {
+		Double prevJobScore = contractor.getJobsLM();
+		if (prevJobScore == -1) {
+			if (!Classify.featuresToRemove.contains(index)
+					&& tmpAr[36].trim().length() > 0) {
 				double loglm = Double.parseDouble(tmpAr[36].trim());
 				if (loglm > 0) {
 
-					contractorJobsLMscores.put(contractor, loglm);
+					contractor.setJobsLM(loglm);
 				}
 			}
-		} else if (tmpAr[36].trim().length() > 0) {
+		} else if (!Classify.featuresToRemove.contains(index)
+				&& tmpAr[36].trim().length() > 0) {
 
 			double loglm = Double.parseDouble(tmpAr[36].trim());
 			if (loglm > 0) {
-				contractorJobsLMscores.put(contractor, loglm);
+				contractor.setJobsLM(loglm);
 				loglm = Math.abs(loglm - prevJobScore)
 						/ Math.max(loglm, prevJobScore);
 				instance += " " + index + ":" + loglm;
@@ -450,13 +518,29 @@ public class Utils {
 		}
 		index++;
 
-		if (tmpAr[36].trim().length() > 0) {
+		if (!Classify.featuresToRemove.contains(index)
+				&& tmpAr[36].trim().length() > 0) {
 
 			double loglm = Double.parseDouble(tmpAr[36].trim());
 			if (loglm > 0)
 				instance += " " + index + ":" + loglm;
 		}
 
+		/*index++;
+		 * if (tmpAr[20].trim().length() > 0 && tmpAr[9].trim().length() > 0) {
+		 * double starDate = Double.parseDouble(tmpAr[20].trim()); double apDate
+		 * = Double.parseDouble(tmpAr[9].trim());
+		 * 
+		 * instance += " " + index + ":" + (starDate - apDate); } index++;
+		 */
+		// if (tmpAr[20].trim().length() > 0) {
+		// double prcSkills = Double.parseDouble(tmpAr[20].trim());
+		// if (prcSkills >= 0 && prcSkills <= 1)
+		// instance += " " + index + ":" + prcSkills;
+		// }
+		// else
+		// instance += " " + index + ":0";
+		
 		if (!labelIsZero && label == 0) {
 			pf.writeToFile(instance);
 			labelIsZero = true;
@@ -470,16 +554,33 @@ public class Utils {
 	 * 
 	 */
 	public String[] getFeatures() {
-		String headings = "job_type,english,hourly_rate,hourly_agency_rate,"
+		String headings = "english,hourly_rate (or agency rate),"
 				+ "availability_hrs,total_tests,yrs_exp, no_qualifications,"
 				+ "total_hours,adjusted_score,adjusted_score_recent,total_last_90_days,"
-				+ "prc_skills_matching,english_score_diff, pref_feedback_score_diff, prc_interviewed,"
+				+"english_score_diff, pref_feedback_score_diff, prc_interviewed,"
 				+ "timezoneDiff, contr_location, cover_unigram_score_diff, cover_unigram_score,"
-				+ "order_of_application,client_country,pref_has_portfolio,number_prev_openings,"
+				+ "order_of_application,client_country,same_client_contr_country, pref_has_portfolio,number_prev_openings,"
 				+ "job_unigram_score_diff, job_unigram_score," + "intercept";
 
 		String[] tmpAr = headings.split(",");
-		return tmpAr;
+		//System.out.println("Size b4:"+tmpAr.length);
+		for (int ind : Classify.featuresToRemove) {
+			System.out.println("we are removing feature "+tmpAr[ind - 1]+" with index "+ind);
+			tmpAr[ind - 1] = null;
+			
+			
+		}
+		String [] res = new String[tmpAr.length - Classify.featuresToRemove.size()];
+		int j=0;
+		for(int i=0; i< tmpAr.length; i++){
+			if(tmpAr[i] != null){
+				res[j] = tmpAr[i];
+				j++;
+			}
+		}
+		//System.out.println(" after:"+res.length);
+		return res;
+
 	}
 
 	public ArrayList<ProbHolder> loadHolders(String f) {

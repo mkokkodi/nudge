@@ -1,4 +1,4 @@
-package kokkodis.factory;
+package kokkodis.utils;
 
 public class XYPair {
 	private double x;

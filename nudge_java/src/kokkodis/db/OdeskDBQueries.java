@@ -1,11 +1,8 @@
 package kokkodis.db;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -20,9 +17,7 @@ import java.util.Properties;
 import java.util.Set;
 
 import kokkodis.lm.TextHolder;
-import kokkodis.probInterview.dataClasses.Contractor;
 import kokkodis.textprocessing.TextPreProcessing;
-import kokkodis.utils.Counter;
 import kokkodis.utils.PrintToFile;
 
 public class OdeskDBQueries {
@@ -280,80 +275,7 @@ public class OdeskDBQueries {
 		return null;
 	}
 
-	public void createTrainingFile() {
-		HashMap<String, Integer> locationToNominal = new HashMap<String, Integer>();
-
-		int locationIndex = 0;
-		Counter<Integer> orderMap = new Counter<Integer>();
-		PrintToFile trainFile = new PrintToFile();
-		trainFile
-				.openFile("/Users/mkokkodi/Documents/workspace/nudge_java/data/train.txt");
-		PrintToFile testFile = new PrintToFile();
-		testFile.openFile("/Users/mkokkodi/Documents/workspace/nudge_java/data/test.txt");
-		HashMap<Integer, Contractor> contractors = new HashMap<Integer, Contractor>();
-		try {
-
-			String selectString = "drop table if exists panagiotis.marios_V_parsedApps; "
-					+ "select * "
-					+ "into panagiotis.marios_V_parsedApps "
-					+ "from panagiotis.marios_application_info  c   "
-					+ "where c.prc_skills_matching is not null";
-			PreparedStatement stmt = conn.prepareStatement(selectString);
-			stmt.execute();
-			selectString = "select job_type, reason, ap.opening,  ap.contractor, interview_client, interview_contractor, english, hourly_rate, "
-					+ "availability_hrs, ap.date_created, c.city, c.country, hourly_agency_rate,  total_tests, yrs_exp, no_qualifications, "
-					+ "total_hours, adjusted_score,  "
-					+ "adjusted_score_recent, total_last_90_days, start_date, job_description, prc_skills_matching, "
-					+ "job_category, pref_english_score, pref_feedback_score,prc_interviewed,"
-					+
-					// " required_skills, skill_requested, " +
-					"pref_hourly_rate_max,  pref_hourly_rate_min, "
-					// + "pref_location,
-					+ "pref_test,  pref_odesk_hours "
-					+ "from panagiotis.marios_V_parsedApps ap  "
-					+ "inner join panagiotis.marios_contractor_profiles  c  "
-					+ "on ap.contractor = c.contractor "
-					+ "inner join panagiotis.marios_openings op "
-					+ "on ap.opening = op.opening "
-					+ ""
-					+ "order by date_created " + "limit 2000000";
-			stmt = conn.prepareStatement(selectString);
-			// System.out.println("Executing...");
-			stmt.execute();
-			System.out.println("Query executed...");
-			ResultSet rs = stmt.getResultSet();
-
-			while (rs.next()) {
-				int opening = rs.getInt("opening");
-				orderMap.incrementCount(opening, 1);
-
-				Integer curLocation = null;
-				String curCountry = rs.getString("country");
-				if (curCountry != null) {
-					curLocation = locationToNominal.get(curCountry);
-					if (curLocation == null) {
-						locationIndex++;
-						locationToNominal.put(curCountry, locationIndex);
-					}
-				}
-				String instance = createInstance(rs,
-						(int) orderMap.getCount(opening), curLocation);
-				if (label == 0 && Math.random() < 0.15 || label == 1) {
-					if (Math.random() < 0.9)
-						trainFile.writeToFile(instance);
-					else
-						testFile.writeToFile(instance);
-
-				}
-			}
-			System.out.println("File created.");
-			testFile.closeFile();
-			trainFile.closeFile();
-		} catch (SQLException sqle) {
-			sqle.printStackTrace();
-		}
-	}
-
+	
 	private String createInstance(ResultSet rs, int order, Integer curLocation) {
 		int jobType;
 

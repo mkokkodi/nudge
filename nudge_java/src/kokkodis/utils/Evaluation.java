@@ -4,7 +4,6 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.TreeSet;
 
-import kokkodis.factory.XYPair;
 import kokkodis.logitModel.Classify;
 import kokkodis.utils.compare.XYPairComparator;
 

@@ -1,4 +1,4 @@
-package kokkodis.logitModel;
+package kokkodis.utils.compare;
 
 import java.util.Comparator;
 import java.util.Map.Entry;

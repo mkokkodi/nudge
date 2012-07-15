@@ -1,4 +1,4 @@
-package kokkodis.logitModel;
+package kokodis.holders;
 
 public class ProbHolder {
 

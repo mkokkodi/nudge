@@ -6,17 +6,20 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.ListIterator;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import kokkodis.factory.XYPair;
 import kokkodis.utils.Counter;
 import kokkodis.utils.Evaluation;
 import kokkodis.utils.PrintToFile;
+import kokkodis.utils.ProbabilisticAnalysis;
 import kokkodis.utils.Utils;
+import kokkodis.utils.XYPair;
 import kokkodis.utils.compare.XYPairComparator;
+import kokodis.holders.ProbHolder;
 import de.bwaldvogel.liblinear.InvalidInputDataException;
 import de.bwaldvogel.liblinear.Linear;
 import de.bwaldvogel.liblinear.Model;
@@ -42,6 +45,9 @@ public class Classify {
 	public static String jobType;
 	public static HashMap<String, String> intToCat;
 	public static String[] features;
+	public static HashSet<Integer> featuresToRemove;
+	public static String removedFeat = "";
+	public static String testType = "MixedClients";
 
 	private static double intercept = 0;
 
@@ -71,10 +77,13 @@ public class Classify {
 			initialize();
 			if (args[0].contains("-h"))
 				printHelp();
-			else {
+			else if (args[0].contains("-features")) {
+				showFeatures();
+			} else {
 				for (int i = 0; i < args.length; i++) {
 					if (args[i].contains("-fixed"))
 						fixed = true;
+
 					else if (args[i].contains("-f")) {
 						baseFile = args[i + 1];
 						i++;
@@ -84,9 +93,11 @@ public class Classify {
 					} else if (args[i].contains("-C")) {
 						C = Double.parseDouble(args[i + 1].trim());
 						i++;
+						System.out.println("C=" + C);
 					} else if (args[i].contains("-I")) {
 						intercept = Double.parseDouble(args[i + 1]);
 						i++;
+						System.out.println("Intercept:" + intercept);
 					} else if (args[i].contains("-c")) {
 						createFiles = true;
 
@@ -109,6 +120,25 @@ public class Classify {
 						computeAuc = true;
 					else if (args[i].contains("-hourly"))
 						hourly = true;
+					else if (args[i].contains("-r")) {
+
+						String[] tmpAr = args[i + 1].split(",");
+						i++;
+						for (String s : tmpAr) {
+
+							featuresToRemove.add(Integer.parseInt(s.trim()));
+
+						}
+						if (Classify.featuresToRemove.size() > 0) {
+							for (int l : Classify.featuresToRemove) {
+								removedFeat += "-" + l;
+								// System.out.println(l);
+							}
+						}
+
+					} else if (args[i].contains("-n")) {
+						testType = "NewClients";
+					}
 				}
 				if (!fixed && !hourly && !createFiles) {
 					System.out.println("You have to specify whether you want "
@@ -132,30 +162,30 @@ public class Classify {
 					}
 					if (buildModel && hourly) {
 						jobType = "Hourly";
-						System.out.println("Building " + jobType + " Model...");
+						System.out.println("Building " + jobType + testType
+								+ " Model...");
 
 						buildModel();
 						System.out
 								.println("---------------------------------------------------------------");
-						System.out
-								.println("Model built. Saved in :" + "model/"
-										+ currentSolver + "_C" + Cstr + "_I"
-										+ interceptStr + "_" + jobType + "_"
-										+ baseFile);
+						System.out.println("Model built. Saved in :" + "model/"
+								+ currentSolver + "_C" + Cstr + "_I"
+								+ interceptStr + "_" + jobType + testType + "_"
+								+ baseFile + removedFeat);
 						System.out.println();
 					}
 					if (buildModel && fixed) {
 						jobType = "Fixed";
-						System.out.println("Building " + jobType + " Model...");
+						System.out.println("Building " + jobType + testType
+								+ " Model...");
 
 						buildModel();
 						System.out
 								.println("---------------------------------------------------------------");
-						System.out
-								.println("Model built. Saved in :" + "model/"
-										+ currentSolver + "_C" + Cstr + "_I"
-										+ interceptStr + "_" + jobType + "_"
-										+ baseFile);
+						System.out.println("Model built. Saved in :" + "model/"
+								+ currentSolver + "_C" + Cstr + "_I"
+								+ interceptStr + "_" + jobType + testType + "_"
+								+ baseFile + removedFeat);
 						System.out.println();
 					}
 
@@ -170,13 +200,13 @@ public class Classify {
 								+ "data/results/" + intToCat.get(baseFile)
 								+ "/testSetProbs_" + currentSolver + "_C"
 								+ Cstr + "_I" + interceptStr + "_" + jobType
-								+ ".csv");
+								+ testType + removedFeat + ".csv");
 						System.out.println();
 					}
 					if (predict && fixed) {
 						jobType = "Fixed";
 						System.out.println("Predicting instances in " + jobType
-								+ " test set.");
+								+ testType + " test set.");
 						System.out
 								.println("---------------------------------------------------------------");
 						predict();
@@ -186,7 +216,7 @@ public class Classify {
 								+ "data/results/" + intToCat.get(baseFile)
 								+ "/testSetProbs_" + currentSolver + "_C"
 								+ Cstr + "_I" + interceptStr + "_" + jobType
-								+ ".csv");
+								+ testType + removedFeat + ".csv");
 						System.out.println();
 					}
 					if (verbal && hourly) {
@@ -216,8 +246,18 @@ public class Classify {
 					if (showWeights && hourly) {
 						System.out.println("Printing weights for:" + basePath
 								+ "model/" + currentSolver + "_C" + Cstr + "_I"
-								+ interceptStr + "_" + "_" + jobType + "_"
-								+ baseFile);
+								+ interceptStr + "_" + "_" + jobType + testType
+								+ "_" + baseFile + removedFeat);
+						System.out
+								.println("---------------------------------------------------------------");
+						indexFeatures();
+						printWeights();
+					}
+					if (showWeights && fixed) {
+						System.out.println("Printing weights for:" + basePath
+								+ "model/" + currentSolver + "_C" + Cstr + "_I"
+								+ interceptStr + "_" + "_" + jobType + testType
+								+ "_" + baseFile + removedFeat);
 						System.out
 								.println("---------------------------------------------------------------");
 						indexFeatures();
@@ -230,6 +270,13 @@ public class Classify {
 			printHelp();
 
 		}
+
+	}
+
+	private static void showFeatures() {
+		indexFeatures();
+		for (int i = 0; i < features.length; i++)
+			System.out.println((i + 1) + " : " + features[i]);
 
 	}
 
@@ -251,6 +298,7 @@ public class Classify {
 		intToCat.put("70", "70_cust_service");
 		intToCat.put("80", "80_sales_marketing");
 		intToCat.put("90", "90_bus_services");
+		featuresToRemove = new HashSet<Integer>();
 
 	}
 
@@ -269,7 +317,12 @@ public class Classify {
 				+ "-e		eps: difference between objective function to stop itearting. Default:0.0000001 >>"
 				+ "-AUC		compute auc points: you can find them in ./results/ >>"
 				+ "-hourly		Builds, predicts, for hourly job-types data. >>"
-				+ "-fixed		Builds, predicts for fixed job-types data. ";
+				+ "-fixed		Builds, predicts for fixed job-types data. >>"
+				+ "-r		Features to remove (-features to see the feature indices). >>"
+				+ "-features		show features' indices. >>"
+				+ "-n		test NewClients. Default is mixedClients. ";
+		;
+
 		System.out.println("Parameters:");
 		System.out.println("---------------------------------------");
 		for (String str : s.split(">>"))
@@ -295,8 +348,16 @@ public class Classify {
 						}
 					});
 
+			int j = 0;
+			//System.out.println(":" + w.length + "vs mine:"
+				//	+ features.length);
 			for (int i = 0; i < w.length; i++) {
-				tm.put(w[i], features[i]);
+			//	System.out.print(w[i]+" ");
+				if (!featuresToRemove.contains(i + 1)) {
+					tm.put(w[i], features[j]);
+				//	System.out.println(features[j]);
+					j++;
+				}
 			}
 
 			for (Entry<Double, String> e : tm.entrySet())
@@ -313,7 +374,7 @@ public class Classify {
 
 			ml = Linear.loadModel(new File(basePath + "model/" + currentSolver
 					+ "_C" + Cstr + "_I" + interceptStr + "_" + jobType + "_"
-					+ baseFile));
+					+ baseFile + removedFeat));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -329,7 +390,8 @@ public class Classify {
 
 		Evaluation eval = new Evaluation();
 
-		Problem problem = loadProblem("testData/test" + baseFile + ".txt");
+		Problem problem = loadProblem("testData/test" + baseFile + removedFeat
+				+ ".txt");
 		for (int i = 0; i < problem.x.length; i++) {
 			int prediction = Linear.predict(ml, problem.x[i]);
 			int actual = problem.y[i];
@@ -377,22 +439,24 @@ public class Classify {
 		PrintToFile fileForProbAnalysis = new PrintToFile();
 
 		fileForProbAnalysis.openFile(basePath + "probs/prob_" + currentSolver
-				+ "_C" + Cstr + "_I" + interceptStr + "_" + jobType + "_"
-				+ baseFile + ".csv");
+				+ "_C" + Cstr + "_I" + interceptStr + "_" + jobType + testType
+				+ "_" + baseFile + removedFeat + ".csv");
 		fileForProbAnalysis.writeToFile("probPositive,actual");
 
 		PrintToFile testProbabilities = new PrintToFile();
 		testProbabilities.openFile(basePath + "results/"
 				+ intToCat.get(baseFile) + "/testSetProbs_" + currentSolver
-				+ "_C" + Cstr + "_I" + interceptStr + "_" + jobType + ".csv");
+				+ "_C" + Cstr + "_I" + interceptStr + "_" + jobType + testType
+				+ baseFile + removedFeat + ".csv");
 		testProbabilities
-				.writeToFile("opening,contractor,Pr(hired),true_label");
+				.writeToFile("opening,contractor,pr_interview,true_label");
 
-		Problem problem = loadProblem("testData/test" + jobType + baseFile
-				+ ".txt");
+		Problem problem = loadProblem("testData/test" + jobType + testType
+				+ baseFile + removedFeat + ".txt");
 
 		ArrayList<ProbHolder> testHolder = u.loadHolders(basePath
-				+ "testData/test" + jobType + "Holder" + baseFile + ".csv");
+				+ "testData/test" + "Holder" + jobType + testType + baseFile
+				+ removedFeat + ".csv");
 		ListIterator<ProbHolder> it = testHolder.listIterator();
 		for (int i = 0; i < problem.x.length; i++) {
 			ProbHolder tempHolder = it.next();
@@ -467,7 +531,7 @@ public class Classify {
 	private static void buildModel() {
 
 		Problem problem = loadProblem("trainData/train" + jobType + baseFile
-				+ ".txt");
+				+ removedFeat + ".txt");
 
 		Parameter p = new Parameter(getSolverType(), C, eps);
 		Model ml = Linear.train(problem, p);
@@ -480,7 +544,7 @@ public class Classify {
 		try {
 			Linear.saveModel(new File(basePath + "model/" + currentSolver
 					+ "_C" + Cstr + "_I" + interceptStr + "_" + jobType + "_"
-					+ baseFile), ml);
+					+ baseFile + removedFeat), ml);
 
 		} catch (IOException e) {
 			e.printStackTrace();

@@ -20,8 +20,7 @@ public class ReadGz {
 	 */
 	public static void main(String[] args) {
 
-		NudgeDBQueries q = new NudgeDBQueries();
-		q.connect();
+		
 		String f;
 
 		InputStream in;
@@ -45,6 +44,8 @@ public class ReadGz {
 			f = "/Users/mkokkodi/git/nudge/nudge_java/tmp/test.csv";
 		try {
 
+			NudgeDBQueries q = new NudgeDBQueries();
+			q.connect();
 			// BufferedReader input = new BufferedReader(r);//new
 			// FileReader(r.));
 			// BufferedReader input = new BufferedReader(new FileReader(f));
@@ -98,7 +99,7 @@ public class ReadGz {
 
 					}
 					insertString += "),";
-					if (index == 1000) {
+					if (index == 10000) {
 						q.insertTuple(insertString.substring(0,
 								insertString.length() - 1));
 						index = 0;

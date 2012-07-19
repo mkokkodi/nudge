@@ -57,7 +57,7 @@ public class NudgeDBQueries {
 		String selectString="";
 		try {
 			System.out.println("Inserting...");
-			selectString = "insert into snapshots" + " values " + str;
+			selectString = "insert into nudge.snapshots" + " values " + str;
 
 			// System.out.println(selectString);
 			PreparedStatement stmt = conn.prepareStatement(selectString);

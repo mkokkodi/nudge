@@ -60,6 +60,7 @@ public class ReadGz {
 			String[] nextLine;
 			int index = 0;
 			String insertString = "";
+			int iteration = 0;
 			while ((nextLine = reader.readNext()) != null) {
 
 				insertString += "('" + nextLine[0] + "'";
@@ -104,6 +105,8 @@ public class ReadGz {
 								insertString.length() - 1));
 						index = 0;
 						insertString = "";
+						System.out.println("Iteration "+iteration+" completed.");
+						iteration++;
 
 					} else {
 						index++;

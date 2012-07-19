@@ -99,7 +99,7 @@ public class ReadGz {
 
 					}
 					insertString += "),";
-					if (index == 10000) {
+					if (index == 1000) {
 						q.insertTuple(insertString.substring(0,
 								insertString.length() - 1));
 						index = 0;

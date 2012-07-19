@@ -7,9 +7,9 @@ import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.TreeSet;
 
-import kokkodis.logitModel.Classify;
+import kokkodis.holders.ProbHolder;
+import kokkodis.logistic.Classify;
 import kokkodis.utils.compare.TSComparator;
-import kokodis.holders.ProbHolder;
 
 public class ProbabilisticAnalysis {
 
@@ -22,10 +22,10 @@ public class ProbabilisticAnalysis {
 	public static void doProbabilisticAnalysis() {
 		try {
 			BufferedReader input = new BufferedReader(new FileReader(new File(
-					Classify.basePath + "probs/prob" + "_"
+					Classify.dataPath + "probs/prob" + "_"
 							+ Classify.currentSolver + "_C" + Classify.Cstr
 							+ "_I" + Classify.interceptStr + "_"
-							+ Classify.jobType +Classify.testType+ "_" + Classify.baseFile 
+							+ Classify.jobType + "_" + Classify.baseFile 
 							+ Classify.removedFeat + ".csv")));
 			String line;
 			line = input.readLine();
@@ -42,16 +42,16 @@ public class ProbabilisticAnalysis {
 			System.out.println(i + " tm.size:" + ts.size());
 
 			PrintToFile pf = new PrintToFile();
-			pf.openFile(Classify.basePath + "/probs/" + Classify.currentSolver
+			pf.openFile(Classify.dataPath + "/probs/" + Classify.currentSolver
 					+ "_" + Classify.C + "_probsComparison_" + Classify.jobType
-					+ Classify.testType + "_" + Classify.baseFile
+					 + "_" + Classify.baseFile
 					+ Classify.removedFeat + ".csv");
 			pf.writeToFile("Pr(predicted_positive>threshold), Total_predictions, Pr(actual_positive)");
 
 			PrintToFile liftsFile = new PrintToFile();
-			liftsFile.openFile(Classify.basePath + "/probs/"
+			liftsFile.openFile(Classify.dataPath + "/probs/"
 					+ Classify.currentSolver + "_" + Classify.C + "_lift_"
-					+ Classify.jobType + Classify.testType + "_" + Classify.baseFile
+					+ Classify.jobType  + "_" + Classify.baseFile
 					 + Classify.removedFeat + ".csv");
 			liftsFile.writeToFile("Predicted_prob_gt, lift");
 			for (double th = 0.95; th > 0; th -= 0.05) {

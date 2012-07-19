@@ -1,0 +1,19 @@
+variable,min,mx
+english,0,5
+availability,0,100
+hourly_rate,0,500
+total_tests, 0, 100
+yrs_exp,0,30
+no_qualifications, 0, 50
+total_hours,0, 40000
+adjusted_score, 0 , 5
+adjusted_score_recent, 0 , 5
+total_last_90_days, 0, 4500
+pref_english_score, 0, 5
+pref_test, 0, 40
+utc, 0, 24
+number_prev_openings, 0, 200
+cover_unigram_score, 0 , 9113
+order_of_application, 1, 1000
+job_unigram_score, 0 , 7000
+country

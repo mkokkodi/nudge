@@ -4,6 +4,7 @@ import java.util.ArrayList;
 
 public class TextHolder {
 
+	private int contractor;
 	private int application;
 	private ArrayList<String> text;
 	public TextHolder() {
@@ -21,5 +22,12 @@ public class TextHolder {
 	public void setText(ArrayList<String> cover) {
 		this.text = cover;
 	}
+	public int getContractor() {
+		return contractor;
+	}
+	public void setContractor(int contractor) {
+		this.contractor = contractor;
+	}
+	
 
 }

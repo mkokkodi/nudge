@@ -1,5 +1,7 @@
 package kokkodis.db;
 
+import ipeirotis.readability.Readability;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -32,6 +34,10 @@ public class OdeskDBQueries {
 	String url = "jdbc:postgresql://localhost:2001/odw";
 	private Connection conn;
 
+	public Connection getConn() {
+		return conn;
+	}
+
 	public void connect() {
 		try {
 			Class.forName(driver);
@@ -57,8 +63,7 @@ public class OdeskDBQueries {
 	public static void main(String[] args) {
 		OdeskDBQueries q = new OdeskDBQueries();
 		q.connect();
-		q.analyzeCoverLetters();
-		// q.computePrcSkillsMacthing();
+
 		System.out.println("End");
 	}
 
@@ -71,12 +76,12 @@ public class OdeskDBQueries {
 			String selectString = "select c.application, c.cover, c.contractor "
 					+ "from "
 					+ "(  "
-					+ "select distinct(con.contractor) " +
-					"from panagiotis.temp_contractors con " +
-					"left outer join  panagiotis.marios_application_cover_scores  s " +
-					"on con.contractor = s.contractor where unigram_score is null" +
-					" limit 100) r "
-					+ "inner join panagiotis.temp_application_cover c on r.contractor = c.contractor "
+					+ "select distinct(con.contractor) "
+					+ "from panagiotis.temp_contractors con "
+					+ "left outer join  panagiotis.marios_application_cover_scores  s "
+					+ "on con.contractor = s.contractor where unigram_score is null"
+					+ " limit 100) r "
+					+ "inner join panagiotis.marios_application_cover_contractor c on r.contractor = c.contractor "
 					+ "order by date_created";
 
 			PreparedStatement stmt = conn.prepareStatement(selectString);
@@ -87,7 +92,7 @@ public class OdeskDBQueries {
 
 			while (rs.next()) {
 				int contractor = rs.getInt("contractor");
-				//System.out.println("in:"+contractor);
+				// System.out.println("in:"+contractor);
 				int application = rs.getInt("application");
 				String cover = rs.getString("cover");
 				ArrayList<TextHolder> holderList = hm.get(contractor);
@@ -275,7 +280,6 @@ public class OdeskDBQueries {
 		return null;
 	}
 
-	
 	private String createInstance(ResultSet rs, int order, Integer curLocation) {
 		int jobType;
 
@@ -366,14 +370,14 @@ public class OdeskDBQueries {
 		}
 		return null;
 	}
-	
-	public void insertLMScore(String str, String table) {
+
+	public void insertScores(String str, String table) {
 		try {
 			System.out.println("Inserting...");
-			String selectString = "insert into panagiotis."+table+" values "
-					+ str;
-			
-			//System.out.println(selectString);
+			String selectString = "insert into panagiotis." + table
+					+ " values " + str;
+
+			// System.out.println(selectString);
 			PreparedStatement stmt = conn.prepareStatement(selectString);
 			// System.out.println(selectString);
 			// System.out.println("Executing...");
@@ -390,16 +394,16 @@ public class OdeskDBQueries {
 		HashMap<Integer, ArrayList<TextHolder>> hm = new HashMap<Integer, ArrayList<TextHolder>>();
 		System.out.println("Selecting Job descriptions...");
 		try {
-			String selectString = "select c.application, c.job_description, c.contractor " +
-					"from (  select distinct(con.contractor) " +
-					"from panagiotis.temp_contractors_for_jobs con  " +
-					"left outer join  panagiotis.marios_application_job_score  s " +
-					"on con.contractor = s.contractor " +
-					"where unigram_score is null  " +
-					"limit 100) r " +
-					"inner join panagiotis.temp_application_job c " +
-					"on r.contractor = c.contractor " +
-					"order by date_created;";
+			String selectString = "select c.application, c.job_description, c.contractor "
+					+ "from (  select distinct(con.contractor) "
+					+ "from panagiotis.temp_contractors_for_jobs con  "
+					+ "left outer join  panagiotis.marios_application_job_score  s "
+					+ "on con.contractor = s.contractor "
+					+ "where unigram_score is null  "
+					+ "limit 100) r "
+					+ "inner join panagiotis.temp_application_job c "
+					+ "on r.contractor = c.contractor "
+					+ "order by date_created;";
 
 			PreparedStatement stmt = conn.prepareStatement(selectString);
 			// System.out.println("Executing...");
@@ -409,7 +413,7 @@ public class OdeskDBQueries {
 
 			while (rs.next()) {
 				int contractor = rs.getInt("contractor");
-				//System.out.println("in:"+contractor);
+				// System.out.println("in:"+contractor);
 				int application = rs.getInt("application");
 				String text = rs.getString("job_description");
 				ArrayList<TextHolder> holderList = hm.get(contractor);
@@ -428,6 +432,103 @@ public class OdeskDBQueries {
 
 			return hm;
 
+		} catch (SQLException sqle) {
+			sqle.printStackTrace();
+		}
+		return null;
+	}
+
+	public boolean estimateBlurbScores() {
+		System.out.println("Selecting blurbs ...");
+		try {
+			String selectString = "select c.contractor, c.blurb "
+					+ "from panagiotis.temp_blurbs c "
+					+ "left outer join panagiotis.marios_contractor_blurb_scores p "
+					+ "on c.contractor = p.contractor  "
+					+ "where p.smog is null " + "limit 5000";
+
+			PreparedStatement stmt = conn.prepareStatement(selectString);
+			// System.out.println("Executing...");
+			stmt.execute();
+			System.out.println("Blurbs are here - let's parse them.");
+			ResultSet rs = stmt.getResultSet();
+			String insertString = "";
+			if (rs.next())
+				insertString += parseReadabilityText(rs);
+			else
+				return false;
+			while (rs.next()) {
+				insertString += "," + parseReadabilityText(rs);
+			}
+			insertScores(insertString, "marios_contractor_blurb_scores");
+			return true;
+		} catch (SQLException sqle) {
+			sqle.printStackTrace();
+			return false;
+		}
+	}
+
+	private String parseReadabilityText(ResultSet rs) {
+
+		try {
+			int contractor = rs.getInt("contractor");
+
+			String text = rs.getString("blurb");
+			// System.out.println("in:"+contractor);
+			Readability r = new Readability(text);
+			// System.out.println(text);
+			if(text.contains("[a-z]+")){
+			Double ari = null;
+			try {
+				ari = r.getARI();
+			} catch (NumberFormatException e) {
+				System.out.println(text);
+				System.out.println("Smog:" + r.getSMOG());
+			}
+
+			String insertString = "('" + contractor + "','" + r.getSMOG()
+					+ "','" + ari + "','" + r.getColemanLiau() + "','"
+					+ r.getFleschKincaidGradeLevel() + "','"
+					+ r.getGunningFog() + "','" + r.getSMOGIndex() + "','"
+					+ r.getCharacters() + "','" + r.getWords() + "','"
+					+ r.getSentences() + "','" + r.getSyllables() + "','"
+					+ r.getComplex() + "')";
+			return insertString;
+			}
+			else return "('" + contractor + "','" + -1
+					+ "','" + 0 + "','" + 0 + "','"
+					+ 0 + "','"
+					+ 0 + "','" + 0 + "','"
+				+ 0 + "','" + 0 + "','"
+					+ 0 + "','" + 0 + "','"
+					+ 0 + "')";
+		} catch (SQLException e) {
+
+			e.printStackTrace();
+			return "";
+		}
+
+	}
+
+	public ArrayList<String> selectJobText(int i) {
+		System.out.println("collecting text ...");
+		try {
+			String selectString = "select c.contractor, c.blurb "
+					+ "from panagiotis.temp_blurbs c "
+					+ "left outer join panagiotis.marios_contractor_blurb_scores p "
+					+ "on c.contractor = p.contractor  "
+					+ "where p.smog is null " + "limit 5000";
+
+			PreparedStatement stmt = conn.prepareStatement(selectString);
+			// System.out.println("Executing...");
+			stmt.execute();
+			System.out.println("Blurbs are here - let's parse them.");
+			ResultSet rs = stmt.getResultSet();
+			String insertString = "";
+		
+			while (rs.next()) {
+			}
+	
 		} catch (SQLException sqle) {
 			sqle.printStackTrace();
 		}

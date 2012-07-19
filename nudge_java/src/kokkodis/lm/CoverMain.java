@@ -37,7 +37,8 @@ public class CoverMain {
 								null);
 						if (UserUnigram.wordCounter.size() > 1) {
 
-							double score = uniLM.computeLogProb(words);
+							double score = uniLM.computePerplexity(words);
+							//System.out.println(score);
 							// System.out.println(innerMap.getKey()+" "+e.getKey()+" "+score);
 							insertString += "('" + coverHolder.getApplication()
 									+ "','" + Math.round(score) + "','"
@@ -55,7 +56,7 @@ public class CoverMain {
 
 				}
 				if (insertString.length() > 0)
-					q.insertLMScore(insertString.substring(0,
+					q.insertScores(insertString.substring(0,
 							insertString.length() - 1),
 							"marios_application_cover_scores");
 				System.out.println("Iteration " + index + " completed.");

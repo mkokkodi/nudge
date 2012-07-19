@@ -2,7 +2,7 @@ package kokkodis.utils.compare;
 
 import java.util.Comparator;
 
-import kokodis.holders.ProbHolder;
+import kokkodis.holders.ProbHolder;
 
 public class TSComparator implements Comparator<ProbHolder> {
 

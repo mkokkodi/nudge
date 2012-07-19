@@ -4,7 +4,7 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.TreeSet;
 
-import kokkodis.logitModel.Classify;
+import kokkodis.logistic.Classify;
 import kokkodis.utils.compare.XYPairComparator;
 
 public class Evaluation {
@@ -60,7 +60,7 @@ public class Evaluation {
 
 	public void printAUCPoints(TreeSet<XYPair> xyData) {
 		PrintToFile pf = new PrintToFile();
-		pf.openFile(Classify.basePath + "results/"
+		pf.openFile(Classify.dataPath + "results/"
 				+ Classify.intToCat.get(Classify.baseFile) + "/"
 				+ Classify.currentSolver + "_aucPoints_C" + Classify.Cstr
 				+ "_I" + Classify.interceptStr + "_" + Classify.jobType

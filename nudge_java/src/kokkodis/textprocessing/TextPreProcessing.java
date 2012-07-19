@@ -1,6 +1,5 @@
 package kokkodis.textprocessing;
 
-import java.awt.RadialGradientPaint;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -99,7 +98,49 @@ public class TextPreProcessing {
 		return c;
 	}
 
-	public static void main(String[] args) {
+	
+	public void process(Counter<String> c,  String s) {
+
+		if (s != null) {
+			TokenizerFactory tf = new IndoEuropeanTokenizerFactory();
+			LowerCaseTokenizerFactory lct = new LowerCaseTokenizerFactory(tf);
+
+			StopTokenizerFactory stopTokenizer = new StopTokenizerFactory(lct,
+					stopwords);
+
+			RegExFilteredTokenizerFactory regexTokenizer = new RegExFilteredTokenizerFactory(
+					stopTokenizer, Pattern.compile("[a-z]{2,}"));
+			PorterStemmerTokenizerFactory stemmer = new PorterStemmerTokenizerFactory(
+					regexTokenizer);
+
+			TokenNGramTokenizerFactory unigramTokenizerFactory = new TokenNGramTokenizerFactory(
+					stemmer, 1, 1);
+
+			Tokenizer tokenizer = unigramTokenizerFactory.tokenizer(
+					s.toCharArray(), 0, s.length());
+			List<String> tokenList = new ArrayList<String>();
+			List<String> whiteList = new ArrayList<String>();
+			tokenizer.tokenize(tokenList, whiteList);
+
+			String[] tokens = tokenList.<String> toArray(new String[tokenList
+					.size()]);
+
+			HashSet<String> tmpSet = new HashSet<String>();
+			for (String l : tokens) {
+				// Main.L.incrementCount(l, 1);
+
+				// termFrequencies.incrementCount(application, l, 1);
+				if (!tmpSet.contains(l)) {
+					docFrequencies.incrementCount(l, 1);
+					tmpSet.add(l);
+				}
+			}
+
+			// System.out.println(tokens.length);
+
+		}
+	}
+		public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		String s = "At the time of the current LingPipe release, "
 				+ "we've completed the following chapters, totalling "

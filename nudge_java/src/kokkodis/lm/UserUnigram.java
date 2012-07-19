@@ -11,7 +11,6 @@ import java.util.regex.Pattern;
 
 import kokkodis.utils.Counter;
 
-
 import com.aliasi.tokenizer.IndoEuropeanTokenizerFactory;
 import com.aliasi.tokenizer.LowerCaseTokenizerFactory;
 import com.aliasi.tokenizer.PorterStemmerTokenizerFactory;
@@ -20,9 +19,9 @@ import com.aliasi.tokenizer.StopTokenizerFactory;
 import com.aliasi.tokenizer.Tokenizer;
 import com.aliasi.tokenizer.TokenizerFactory;
 
-public class UserUnigram {   
+public class UserUnigram {
 
-	public static Counter<String> wordCounter;   
+	public static Counter<String> wordCounter;
 	public static Counter<String> currentCounter;
 	private static HashSet<String> stopwords;
 	private static String UNK = "<UNK>";
@@ -71,11 +70,11 @@ public class UserUnigram {
 		/** Add one smoothing */
 		for (Entry<String, Double> e : wordCounter.getEntrySet()) {
 			currentCounter.setCount(e.getKey(), e.getValue() + 1);
-		//	System.out.println(e.getValue() + 1);
+			// System.out.println(e.getValue() + 1);
 		}
 		currentCounter.incrementCount(UNK, 1);
 		currentCounter.normalize();
-		//System.out.println("counter size:"+wordCounter.size());
+		// System.out.println("counter size:"+wordCounter.size());
 
 	}
 
@@ -84,7 +83,6 @@ public class UserUnigram {
 
 		stopwords = readStopwords();
 	}
-
 
 	private HashSet<String> readStopwords() {
 		HashSet<String> h = new HashSet<String>();
@@ -103,15 +101,17 @@ public class UserUnigram {
 		return h;
 	}
 
-	public double computeLogProb(ArrayList<String> words) {
+	public double computePerplexity(ArrayList<String> words) {
 		// TODO Auto-generated method stub
 		double likelihood = 1;
 		for (String word : words) {
 			if (currentCounter.containsKey(word))
-				likelihood += Math.log(currentCounter.getCount(word));
+				likelihood += Math.log(currentCounter.getCount(word))
+						/ Math.log(2);
 			else
-				likelihood += Math.log(currentCounter.getCount(UNK));
+				likelihood += Math.log(currentCounter.getCount(UNK))
+						/ Math.log(2);
 		}
-		return -likelihood;
+		return Math.pow(2, (-likelihood / words.size()));
 	}
 }

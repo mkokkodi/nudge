@@ -42,7 +42,7 @@ public class ReadGz {
 			ignorelines = Integer.parseInt(args[1]);
 
 		} else
-			f = "/Users/mkokkodi/git/nudge/nudge_java/tmp/test.csv";
+			f = "/Users/mkokkodi/git/nudge/nudge_java/tmp/test2.csv";
 		try {
 
 			NudgeDBQueries q = new NudgeDBQueries();
@@ -69,7 +69,7 @@ public class ReadGz {
 				
 				String tmpStr="";
 				for(int i=0; i< nextLine.length; i++){
-					tmpStr +=" "+ nextLine[i];
+					tmpStr +="\",\""+ nextLine[i];
 				}
 				System.out.println(tmpStr);
 				System.out.println("size:"+nextLine.length);
@@ -111,8 +111,8 @@ public class ReadGz {
 					}
 					insertString += "),";
 					if (index == 1000) {
-						q.insertTuple(insertString.substring(0,
-								insertString.length() - 1));
+				//		q.insertTuple(insertString.substring(0,
+					//			insertString.length() - 1));
 						index = 0;
 						insertString = "";
 						System.out.println("Iteration " + iteration

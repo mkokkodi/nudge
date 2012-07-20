@@ -117,10 +117,10 @@ public class ReadGz {
 
 					}
 					insertString += "),";
-					if (index == 1000) {
+					if (index == 200) {
 						q.insertTuple(insertString.substring(0,
 								insertString.length() - 1));
-						System.out.println(lineno);
+					//	System.out.println(insertString);
 						index = 0;
 						insertString = "";
 						System.out.println("Iteration " + iteration

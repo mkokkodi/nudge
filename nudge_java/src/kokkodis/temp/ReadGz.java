@@ -66,9 +66,15 @@ public class ReadGz {
 				reader.readNext();
 			System.out.println("Starting parsing after line " + ignorelines);
 			while ((nextLine = reader.readNext()) != null) {
-
+				
+				String tmpStr="";
+				for(int i=0; i< nextLine.length; i++){
+					tmpStr +=" "+ nextLine[i];
+				}
+				System.out.println(tmpStr);
+				System.out.println("size:"+nextLine.length);
 				insertString += "('" + nextLine[0] + "'";
-
+				
 				if (nextLine.length == 14) {
 					for (int i = 3; i < 11; i++) {
 						if (nextLine[i].length() > 0)

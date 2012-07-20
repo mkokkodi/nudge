@@ -41,8 +41,10 @@ public class ReadGz {
 			}
 			ignorelines = Integer.parseInt(args[1]);
 
-		} else
-			f = "/Users/mkokkodi/git/nudge/nudge_java/tmp/test2.csv";
+		} else{
+			f = "/Users/mkokkodi/git/nudge/nudge_java/tmp/test.csv";
+		
+		}
 		try {
 
 			NudgeDBQueries q = new NudgeDBQueries();
@@ -54,8 +56,9 @@ public class ReadGz {
 			// String line;
 			// line = input.readLine();
 			CSVReader reader;
-			if (r != null)
+			if (r != null){
 				reader = new CSVReader(r);
+			}
 			else
 				reader = new CSVReader(new FileReader(f));
 			String[] nextLine;
@@ -65,8 +68,10 @@ public class ReadGz {
 			for (int i = 0; i < ignorelines; i++)
 				reader.readNext();
 			System.out.println("Starting parsing after line " + ignorelines);
+			int lineno = 0;
 			while ((nextLine = reader.readNext()) != null) {
-				
+				lineno++;
+			
 				String tmpStr="\"";
 				for(int i=0; i< nextLine.length; i++){
 					tmpStr += nextLine[i]+"\"";
@@ -74,7 +79,7 @@ public class ReadGz {
 						tmpStr+=",";
 				}
 			//	System.out.println(tmpStr);
-				System.out.println("size:"+nextLine.length);
+			//	System.out.println("size:"+nextLine.length);
 				insertString += "('" + nextLine[0] + "'";
 				
 				if (nextLine.length == 14) {
@@ -85,7 +90,6 @@ public class ReadGz {
 						else
 							insertString += ",null";
 					}
-					System.out.println("First loop done.");
 					for (int i = 11; i < 14; i++) {
 						nextLine[i] = nextLine[i].replaceAll("\\(", "");
 						String scores = nextLine[i].replaceAll("\\)", "");
@@ -112,11 +116,11 @@ public class ReadGz {
 						}
 
 					}
-					System.out.println("Second loop done.");
 					insertString += "),";
 					if (index == 1000) {
-				//		q.insertTuple(insertString.substring(0,
-					//			insertString.length() - 1));
+						q.insertTuple(insertString.substring(0,
+								insertString.length() - 1));
+						System.out.println(lineno);
 						index = 0;
 						insertString = "";
 						System.out.println("Iteration " + iteration
@@ -128,9 +132,14 @@ public class ReadGz {
 					}
 
 				} else {
+					for(int i=0; i< nextLine.length; i++){
+						tmpStr += nextLine[i]+"\"";
+						if(i<nextLine.length-1)
+							tmpStr+=",";
+					}
 					System.out.println("Weird tuple.");
+				
 				}
-				System.out.println("while loop done. ");
 			}
 
 		} catch (IOException e) {

@@ -231,7 +231,14 @@ public class CSVReader implements Closeable {
     	String[] result = null;
     	do {
     		String nextLine = getNextLine();
+    		//System.out.println(nextLine);
+    		if(nextLine.contains("\\\""))
+    		{	
+    		nextLine = nextLine.replaceAll("\\\\\"","\"");
+    		System.out.println(nextLine);
+    		}
     		if (!hasNext) {
+    			System.out.println("returning:"+result);
     			return result; // should throw if still pending?
     		}
     		String[] r = parser.parseLineMulti(nextLine);
@@ -246,6 +253,7 @@ public class CSVReader implements Closeable {
     			}
     		}
     	} while (parser.isPending());
+    	//System.out.println("Everything went perfect:"+result);
     	return result;
     }
 
@@ -258,6 +266,7 @@ public class CSVReader implements Closeable {
      */
     private String getNextLine() throws IOException {
     	if (!this.linesSkiped) {
+    		
             for (int i = 0; i < skipLines; i++) {
                 br.readLine();
             }

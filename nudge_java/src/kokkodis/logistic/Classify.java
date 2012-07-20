@@ -79,9 +79,10 @@ public class Classify {
 				showFeatures();
 			} else {
 				for (int i = 0; i < args.length; i++) {
-					if (args[i].contains("-fixed"))
+					if (args[i].contains("-fixed")){
 						fixed = true;
-
+						hourly = false;
+				}
 					else if (args[i].contains("-f")) {
 						baseFile = args[i + 1];
 						i++;

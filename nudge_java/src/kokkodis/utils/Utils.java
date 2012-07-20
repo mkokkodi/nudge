@@ -144,16 +144,15 @@ public class Utils {
 				String opening = tmpAr[1].trim();
 				String client = tmpAr[30].trim();
 
-				ClientHolder curClientHolder = clientHistory
-						.get(client);
+				ClientHolder curClientHolder = clientHistory.get(client);
 				if (curClientHolder == null) {
 					curClientHolder = new ClientHolder();
 					clientHistory.put(client, curClientHolder);
-					
+
 				}
 				createInstance(
 						filesMap.get((test ? "test" : "train") + jobType),
-						tmpAr, contractorHolder, curClientHolder,contractor);
+						tmpAr, contractorHolder, curClientHolder, contractor);
 				if (test)
 					filesMap.get("testHolder" + jobType).writeToFile(
 							opening + "," + contractor);
@@ -181,10 +180,11 @@ public class Utils {
 	 * @param tmpAr
 	 * @param contractorHolder
 	 * @param curClientHolder
-	 * @param contractor2 
+	 * @param contractor2
 	 */
 	private void createInstance(PrintToFile pf, String[] tmpAr,
-			ContractorHolder contractorHolder, ClientHolder curClientHolder, String contractor) {
+			ContractorHolder contractorHolder, ClientHolder curClientHolder,
+			String contractor) {
 
 		String instance = "";
 		int label = -1;
@@ -618,11 +618,15 @@ public class Utils {
 		}
 		index++;
 		if (!Classify.featuresToRemove.contains(index)) {
-			if (curClientHolder.getWorkedWithContractors().contains(contractor))
-				instance += " " + (index) + ":1";
-			else {
-				curClientHolder.getWorkedWithContractors().add(contractor);
-			}
+			if (curClientHolder.getWorkedWithContractors().containsKey(
+					contractor))
+				instance += " "
+						+ (index)
+						+ ":"
+						+ curClientHolder.getWorkedWithContractors().getCount(
+								contractor);
+			curClientHolder.getWorkedWithContractors().incrementCount(
+					contractor, 1);
 
 		}
 		index++;
@@ -712,8 +716,8 @@ public class Utils {
 				"cover_unigram_score,"
 				+ "order_of_application,client_country,same_client_contr_country, pref_has_portfolio,number_prev_openings,"
 				// + "job_unigram_score_diff,"
-				+ "job_unigram_score,pref_test_diff, number_prev_applications, " +
-				"contractor_hired_from_current_country, worked_together_before";
+				+ "job_unigram_score,pref_test_diff, number_prev_applications, "
+				+ "contractor_hired_from_current_country, worked_together_before";
 		// + "intercept";
 
 		String[] tmpAr = headings.split(",");

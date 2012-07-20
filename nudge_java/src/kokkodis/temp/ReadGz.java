@@ -20,9 +20,9 @@ public class ReadGz {
 	 */
 	public static void main(String[] args) {
 
-		
 		String f;
 
+		int ignorelines = 0;
 		InputStream in;
 		InputStreamReader r = null;
 
@@ -39,6 +39,7 @@ public class ReadGz {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+			ignorelines = Integer.parseInt(args[1]);
 
 		} else
 			f = "/Users/mkokkodi/git/nudge/nudge_java/tmp/test.csv";
@@ -61,6 +62,9 @@ public class ReadGz {
 			int index = 0;
 			String insertString = "";
 			int iteration = 0;
+			for (int i = 0; i < ignorelines; i++)
+				reader.readNext();
+			System.out.println("Starting parsing after line " + ignorelines);
 			while ((nextLine = reader.readNext()) != null) {
 
 				insertString += "('" + nextLine[0] + "'";
@@ -105,7 +109,8 @@ public class ReadGz {
 								insertString.length() - 1));
 						index = 0;
 						insertString = "";
-						System.out.println("Iteration "+iteration+" completed.");
+						System.out.println("Iteration " + iteration
+								+ " completed.");
 						iteration++;
 
 					} else {

@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -58,28 +59,7 @@ public class TextPreProcessing {
 	public Counter<String> process(String s, Integer application) {
 		Counter<String> c = new Counter<String>();
 		if (s != null) {
-			TokenizerFactory tf = new IndoEuropeanTokenizerFactory();
-			LowerCaseTokenizerFactory lct = new LowerCaseTokenizerFactory(tf);
-
-			StopTokenizerFactory stopTokenizer = new StopTokenizerFactory(lct,
-					stopwords);
-
-			RegExFilteredTokenizerFactory regexTokenizer = new RegExFilteredTokenizerFactory(
-					stopTokenizer, Pattern.compile("[a-z]{2,}"));
-			PorterStemmerTokenizerFactory stemmer = new PorterStemmerTokenizerFactory(
-					regexTokenizer);
-
-			TokenNGramTokenizerFactory trigramTokenizerFactory = new TokenNGramTokenizerFactory(
-					stemmer, 1, 3);
-
-			Tokenizer tokenizer = trigramTokenizerFactory.tokenizer(
-					s.toCharArray(), 0, s.length());
-			List<String> tokenList = new ArrayList<String>();
-			List<String> whiteList = new ArrayList<String>();
-			tokenizer.tokenize(tokenList, whiteList);
-
-			String[] tokens = tokenList.<String> toArray(new String[tokenList
-					.size()]);
+			String[] tokens = analyzeBigrams(s);
 
 			HashSet<String> tmpSet = new HashSet<String>();
 			for (String l : tokens) {
@@ -98,40 +78,45 @@ public class TextPreProcessing {
 		return c;
 	}
 
-	
-	public void process(Counter<String> c,  String s) {
+	private String[] analyzeBigrams(String s) {
+		TokenizerFactory tf = new IndoEuropeanTokenizerFactory();
+		LowerCaseTokenizerFactory lct = new LowerCaseTokenizerFactory(tf);
+
+		StopTokenizerFactory stopTokenizer = new StopTokenizerFactory(lct,
+				stopwords);
+
+		RegExFilteredTokenizerFactory regexTokenizer = new RegExFilteredTokenizerFactory(
+				stopTokenizer, Pattern.compile("[a-z]{2,}"));
+		PorterStemmerTokenizerFactory stemmer = new PorterStemmerTokenizerFactory(
+				regexTokenizer);
+
+		TokenNGramTokenizerFactory trigramTokenizerFactory = new TokenNGramTokenizerFactory(
+				stemmer, 1, 2);
+
+		Tokenizer tokenizer = trigramTokenizerFactory.tokenizer(
+				s.toCharArray(), 0, s.length());
+		List<String> tokenList = new ArrayList<String>();
+		List<String> whiteList = new ArrayList<String>();
+		tokenizer.tokenize(tokenList, whiteList);
+
+		return tokenList.<String> toArray(new String[tokenList.size()]);
+
+	}
+
+	public void process(Counter<String> c, Counter<String> d, String s) {
 
 		if (s != null) {
-			TokenizerFactory tf = new IndoEuropeanTokenizerFactory();
-			LowerCaseTokenizerFactory lct = new LowerCaseTokenizerFactory(tf);
 
-			StopTokenizerFactory stopTokenizer = new StopTokenizerFactory(lct,
-					stopwords);
-
-			RegExFilteredTokenizerFactory regexTokenizer = new RegExFilteredTokenizerFactory(
-					stopTokenizer, Pattern.compile("[a-z]{2,}"));
-			PorterStemmerTokenizerFactory stemmer = new PorterStemmerTokenizerFactory(
-					regexTokenizer);
-
-			TokenNGramTokenizerFactory unigramTokenizerFactory = new TokenNGramTokenizerFactory(
-					stemmer, 1, 1);
-
-			Tokenizer tokenizer = unigramTokenizerFactory.tokenizer(
-					s.toCharArray(), 0, s.length());
-			List<String> tokenList = new ArrayList<String>();
-			List<String> whiteList = new ArrayList<String>();
-			tokenizer.tokenize(tokenList, whiteList);
-
-			String[] tokens = tokenList.<String> toArray(new String[tokenList
-					.size()]);
+			String[] tokens = analyzeBigrams(s);
 
 			HashSet<String> tmpSet = new HashSet<String>();
 			for (String l : tokens) {
 				// Main.L.incrementCount(l, 1);
-
+				c.incrementCount(l, 1);
 				// termFrequencies.incrementCount(application, l, 1);
 				if (!tmpSet.contains(l)) {
-					docFrequencies.incrementCount(l, 1);
+					// docFrequencies.incrementCount(l, 1);
+					d.incrementCount(l, 1);
 					tmpSet.add(l);
 				}
 			}
@@ -140,7 +125,8 @@ public class TextPreProcessing {
 
 		}
 	}
-		public static void main(String[] args) {
+
+	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		String s = "At the time of the current LingPipe release, "
 				+ "we've completed the following chapters, totalling "
@@ -158,6 +144,12 @@ public class TextPreProcessing {
 		TextPreProcessing tpp = new TextPreProcessing();
 		tpp.process(s, 1);
 
+	}
+
+	public HashSet<String> getVector(String text) {
+		String[] tokens = analyzeBigrams(text);
+		HashSet<String> h = new HashSet<String>(Arrays.asList(tokens));
+		return h;
 	}
 
 }

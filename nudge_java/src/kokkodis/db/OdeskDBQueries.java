@@ -477,31 +477,27 @@ public class OdeskDBQueries {
 			// System.out.println("in:"+contractor);
 			Readability r = new Readability(text);
 			// System.out.println(text);
-			if(text.contains("[a-z]+")){
-			Double ari = null;
-			try {
-				ari = r.getARI();
-			} catch (NumberFormatException e) {
-				System.out.println(text);
-				System.out.println("Smog:" + r.getSMOG());
-			}
+			if (text.contains("[a-z]+")) {
+				Double ari = null;
+				try {
+					ari = r.getARI();
+				} catch (NumberFormatException e) {
+					System.out.println(text);
+					System.out.println("Smog:" + r.getSMOG());
+				}
 
-			String insertString = "('" + contractor + "','" + r.getSMOG()
-					+ "','" + ari + "','" + r.getColemanLiau() + "','"
-					+ r.getFleschKincaidGradeLevel() + "','"
-					+ r.getGunningFog() + "','" + r.getSMOGIndex() + "','"
-					+ r.getCharacters() + "','" + r.getWords() + "','"
-					+ r.getSentences() + "','" + r.getSyllables() + "','"
-					+ r.getComplex() + "')";
-			return insertString;
-			}
-			else return "('" + contractor + "','" + -1
-					+ "','" + 0 + "','" + 0 + "','"
-					+ 0 + "','"
-					+ 0 + "','" + 0 + "','"
-				+ 0 + "','" + 0 + "','"
-					+ 0 + "','" + 0 + "','"
-					+ 0 + "')";
+				String insertString = "('" + contractor + "','" + r.getSMOG()
+						+ "','" + ari + "','" + r.getColemanLiau() + "','"
+						+ r.getFleschKincaidGradeLevel() + "','"
+						+ r.getGunningFog() + "','" + r.getSMOGIndex() + "','"
+						+ r.getCharacters() + "','" + r.getWords() + "','"
+						+ r.getSentences() + "','" + r.getSyllables() + "','"
+						+ r.getComplex() + "')";
+				return insertString;
+			} else
+				return "('" + contractor + "','" + -1 + "','" + 0 + "','" + 0
+						+ "','" + 0 + "','" + 0 + "','" + 0 + "','" + 0 + "','"
+						+ 0 + "','" + 0 + "','" + 0 + "','" + 0 + "')";
 		} catch (SQLException e) {
 
 			e.printStackTrace();
@@ -510,29 +506,69 @@ public class OdeskDBQueries {
 
 	}
 
-	public ArrayList<String> selectJobText(int i) {
+	public boolean estimateCosineSimilarity() {
 		System.out.println("collecting text ...");
 		try {
-			String selectString = "select c.contractor, c.blurb "
-					+ "from panagiotis.temp_blurbs c "
-					+ "left outer join panagiotis.marios_contractor_blurb_scores p "
-					+ "on c.contractor = p.contractor  "
-					+ "where p.smog is null " + "limit 5000";
+			String selectString = "select ap.application,ap.blurb, ap.job_description "
+					+ "from panagiotis.marios_application_blurb_job ap "
+					+ "left outer join panagiotis.marios_blurb_jobs_cosine c "
+					+ "on c.application = ap.application where cosine is null "
+					+ "limit 1000";
 
 			PreparedStatement stmt = conn.prepareStatement(selectString);
 			// System.out.println("Executing...");
 			stmt.execute();
-			System.out.println("Blurbs are here - let's parse them.");
+			System.out.println("Blurbs - Jobs are here - let's parse them.");
 			ResultSet rs = stmt.getResultSet();
 			String insertString = "";
-		
+			if (rs.next())
+				insertString += findCosineSimilarity(rs);
+			else
+				return false;
 			while (rs.next()) {
+				insertString += "," + findCosineSimilarity(rs);
 			}
-	
+			// insertScores(insertString, "marios_blurb_jobs_cosine");
+			return true;
+
 		} catch (SQLException sqle) {
 			sqle.printStackTrace();
+			return false;
 		}
+	}
+
+	private String findCosineSimilarity(ResultSet rs) {
+		try {
+			String application = rs.getString("application");
+			String jobText = rs.getString("job_description");
+			String blurb = rs.getString("blurb");
+			TextPreProcessing tp = new TextPreProcessing();
+			HashSet<String> blurbVector = tp.getVector(blurb);
+			HashSet<String> jobVector = tp.getVector(jobText);
+			double score = computeCosine(blurbVector, jobVector);
+			return "('" + application + "','" + score + "')";
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
 		return null;
+	}
+
+	private double computeCosine(HashSet<String> blurbVector,
+			HashSet<String> jobVector) {
+		double blurbSize = blurbVector.size();
+		double jobSize = jobVector.size();
+		blurbVector.retainAll(jobVector);
+		double intersectionSize = blurbVector.size();
+		// System.out.println("intSize:"+intersectionSize+" blurb:"+blurbSize+" job:"+jobSize);
+		if (jobSize > 0 && blurbSize > 0) {
+			double cosine = intersectionSize / (Math.sqrt(jobSize * blurbSize));
+
+			return cosine;
+		} else {
+			return -1;
+		}
 	}
 
 }

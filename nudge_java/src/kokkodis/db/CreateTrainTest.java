@@ -13,7 +13,7 @@ public class CreateTrainTest {
 	 * @param args
 	 */
 	private static OdeskDBQueries q;
-	private static String testSet = "\'2012-03-01\'";
+	private static String testSet = "\'2012-02-01\'";
 
 	public static void main(String[] args) {
 

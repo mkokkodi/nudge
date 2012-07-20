@@ -67,11 +67,13 @@ public class ReadGz {
 			System.out.println("Starting parsing after line " + ignorelines);
 			while ((nextLine = reader.readNext()) != null) {
 				
-				String tmpStr="";
+				String tmpStr="\"";
 				for(int i=0; i< nextLine.length; i++){
-					tmpStr +="\",\""+ nextLine[i];
+					tmpStr += nextLine[i]+"\"";
+					if(i<nextLine.length-1)
+						tmpStr+=",";
 				}
-				System.out.println(tmpStr);
+			//	System.out.println(tmpStr);
 				System.out.println("size:"+nextLine.length);
 				insertString += "('" + nextLine[0] + "'";
 				
@@ -83,6 +85,7 @@ public class ReadGz {
 						else
 							insertString += ",null";
 					}
+					System.out.println("First loop done.");
 					for (int i = 11; i < 14; i++) {
 						nextLine[i] = nextLine[i].replaceAll("\\(", "");
 						String scores = nextLine[i].replaceAll("\\)", "");
@@ -109,6 +112,7 @@ public class ReadGz {
 						}
 
 					}
+					System.out.println("Second loop done.");
 					insertString += "),";
 					if (index == 1000) {
 				//		q.insertTuple(insertString.substring(0,
@@ -126,10 +130,12 @@ public class ReadGz {
 				} else {
 					System.out.println("Weird tuple.");
 				}
+				System.out.println("while loop done. ");
 			}
 
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
+			System.out.println("we have an exception. ");
 			e.printStackTrace();
 		}
 		// }

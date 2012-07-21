@@ -1,3 +1,13 @@
+/****************************************************
+ * @author Marios Kokkodis                          *
+ * comments/questions : mkokkodi@odesk.com     		*
+ *													*					  
+ *  Class Description  - Calculates unigram 
+ *  cover score and stores it i DB.            		*	
+ *													*  
+ * 	*************************************************									
+ */
+
 package kokkodis.lm;
 
 import java.util.ArrayList;
@@ -5,6 +15,7 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 
 import kokkodis.db.OdeskDBQueries;
+import kokkodis.holders.TextHolder;
 
 public class CoverMain {
 
@@ -28,24 +39,17 @@ public class CoverMain {
 						.entrySet()) {
 					int contractor = contractoreEntry.getKey();
 					UserUnigram uniLM = new UserUnigram();
-					// System.out.println(contractor);
 					for (TextHolder coverHolder : contractoreEntry.getValue()) {
 
 						String coverLetter = coverHolder.getText().get(0);
-						// System.out.println(coverLetter);
 						ArrayList<String> words = uniLM.preProcess(coverLetter,
 								null);
 						if (UserUnigram.wordCounter.size() > 1) {
 
 							double score = uniLM.computePerplexity(words);
-							//System.out.println(score);
-							// System.out.println(innerMap.getKey()+" "+e.getKey()+" "+score);
 							insertString += "('" + coverHolder.getApplication()
 									+ "','" + Math.round(score) + "','"
 									+ contractor + "'),";
-							// System.out.println(coverHolder.getApplication() +
-							// "','"
-							// + Math.round(score) + "','" + contractor);
 						} else {
 							insertString += "('" + coverHolder.getApplication()
 									+ "','" + -1 + "','" + contractor + "'),";

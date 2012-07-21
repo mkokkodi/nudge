@@ -1,3 +1,13 @@
+/****************************************************
+ * @author Marios Kokkodis                          *
+ * comments/questions : mkokkodi@odesk.com     		*
+ *													*					  
+ *  Class Description  - queries for creating		* 
+ *  test/train sets                     			*	
+ *													*  
+ * 	*************************************************									
+ */
+
 package kokkodis.db;
 
 import java.sql.PreparedStatement;
@@ -13,10 +23,12 @@ public class CreateTrainTest {
 	 * @param args
 	 */
 	private static OdeskDBQueries q;
-	private static String testSet = "\'2012-02-01\'";
+	private static String testSet = "\'2012-03-01\'";
 
 	public static void main(String[] args) {
 
+		if(args.length> 0)
+			testSet = "'"+args[0]+"'";
 		q = new OdeskDBQueries();
 		q.connect();
 
@@ -62,7 +74,6 @@ public class CreateTrainTest {
 					+ " ";
 
 			PreparedStatement stmt = q.getConn().prepareStatement(selectString);
-			// System.out.println("Executing...");
 			stmt.execute();
 			ResultSet rs = stmt.getResultSet();
 			String[] fields = fieldString.split(",");

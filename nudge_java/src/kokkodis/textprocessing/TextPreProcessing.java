@@ -1,3 +1,13 @@
+/****************************************************
+ * @author Marios Kokkodis                          *
+ * comments/questions : mkokkodi@odesk.com     		*
+ *													*					  
+ *  Class Description : Cleaning, stemming, 
+ *  nGram-ing			                       		*	
+ *													*  
+ * 	*************************************************									
+ */
+
 package kokkodis.textprocessing;
 
 import java.io.BufferedReader;
@@ -36,7 +46,6 @@ public class TextPreProcessing {
 		docFrequencies = new Counter<String>();
 		stopwords = readStopwords();
 
-		// TODO Auto-generated constructor stub
 	}
 
 	private HashSet<String> readStopwords() {
@@ -59,7 +68,7 @@ public class TextPreProcessing {
 	public Counter<String> process(String s, Integer application) {
 		Counter<String> c = new Counter<String>();
 		if (s != null) {
-			String[] tokens = analyzeBigrams(s);
+			String[] tokens = analyzeNgrams(s, 2);
 
 			HashSet<String> tmpSet = new HashSet<String>();
 			for (String l : tokens) {
@@ -78,7 +87,7 @@ public class TextPreProcessing {
 		return c;
 	}
 
-	private String[] analyzeBigrams(String s) {
+	private String[] analyzeNgrams(String s, int n) {
 		TokenizerFactory tf = new IndoEuropeanTokenizerFactory();
 		LowerCaseTokenizerFactory lct = new LowerCaseTokenizerFactory(tf);
 
@@ -91,7 +100,7 @@ public class TextPreProcessing {
 				regexTokenizer);
 
 		TokenNGramTokenizerFactory trigramTokenizerFactory = new TokenNGramTokenizerFactory(
-				stemmer, 1, 2);
+				stemmer, 1, n);
 
 		Tokenizer tokenizer = trigramTokenizerFactory.tokenizer(
 				s.toCharArray(), 0, s.length());
@@ -107,7 +116,7 @@ public class TextPreProcessing {
 
 		if (s != null) {
 
-			String[] tokens = analyzeBigrams(s);
+			String[] tokens = analyzeNgrams(s, 2);
 
 			HashSet<String> tmpSet = new HashSet<String>();
 			for (String l : tokens) {
@@ -147,7 +156,7 @@ public class TextPreProcessing {
 	}
 
 	public HashSet<String> getVector(String text) {
-		String[] tokens = analyzeBigrams(text);
+		String[] tokens = analyzeNgrams(text, 2);
 		HashSet<String> h = new HashSet<String>(Arrays.asList(tokens));
 		return h;
 	}

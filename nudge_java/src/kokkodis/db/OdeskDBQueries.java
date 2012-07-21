@@ -1,3 +1,13 @@
+/****************************************************
+ * @author Marios Kokkodis                          *
+ * comments/questions : mkokkodi@odesk.com     		*
+ *													*					  
+ *  Class Description - general odesk queries  		*	
+ *													*  
+ * 	*************************************************									
+ */
+
+
 package kokkodis.db;
 
 import ipeirotis.readability.Readability;
@@ -18,7 +28,7 @@ import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 
-import kokkodis.lm.TextHolder;
+import kokkodis.holders.TextHolder;
 import kokkodis.textprocessing.TextPreProcessing;
 import kokkodis.utils.PrintToFile;
 
@@ -42,8 +52,8 @@ public class OdeskDBQueries {
 		try {
 			Class.forName(driver);
 			Properties props = new Properties();
-			props.setProperty("user", "odw");// "pkm239");
-			props.setProperty("password", "odw");// "$SamEEra7");
+			props.setProperty("user", "odw");
+			props.setProperty("password", "odw");
 			conn = DriverManager.getConnection(url, props);
 		} catch (SQLException e) {
 			System.err.println("SQLException: " + e.getMessage());

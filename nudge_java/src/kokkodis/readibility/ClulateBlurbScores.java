@@ -1,3 +1,14 @@
+/****************************************************
+ * @author Marios Kokkodis                          *
+ * comments/questions : mkokkodi@odesk.com     		*
+ *													*					  
+ *  Class Description - Calculates readability 
+ *  indices for users' blurbs.                 		*	
+ *													*  
+ * 	*************************************************									
+ */
+
+
 package kokkodis.readibility;
 
 

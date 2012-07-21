@@ -15,25 +15,28 @@ public class Main {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		try {
-			BufferedReader input = new BufferedReader(new FileReader(new File(
-					"/Users/mkokkodi/Desktop/freqs.csv")));
-			String line;
-			line = input.readLine();
+		String s = " 0.859 , 0.058 , 0.013  , 0.022 , 0.030 , 0.019  \n"
+				+ "0.291 , 0.617 , 0.020 , 0.038 , 0.020 , 0.015 Ê \n"
+				+ "0.023 , 0.007  , 0.813 , 0.093 , 0.054 ,0.010  "
+				+ "\n 0.047 , 0.016 , 0.111 , 0.694 , 0.117 , 0.014  \n "
+				+ "0.081 , 0.008  , 0.084 , 0.145 , 0.671 ,0.010  Ê \n"
+				+ "0.182 , 0.025 , 0.052 , 0.061 , 0.034 , 0.646";
 
-			Counter<Integer> c = new Counter<Integer>();
-			while ((line = input.readLine()) != null) {
-				line = line.replaceAll("\"", "");
-				c.incrementCount(Integer.parseInt(line.trim()), 1);
+		String[] tmpAr = s.split("\n");
+
+		String[] labels = { "Web development", "Software development",
+				"Writing", "Administration", "Sales and Marketing",
+				"Design and Multimedia" };
+		int j = 0;
+		System.out.println("source,destination,probability");
+		for (String str : tmpAr) {
+			String[] tmpAr2 = str.split(",");
+			for (int i = 0; i < 6; i++) {
+				System.out.println(labels[j] + "," + labels[i] + ","
+						+ tmpAr2[i]);
 			}
-			c.normalize();
-			PrintToFile pf = new PrintToFile();
-			pf.openFile("/Users/mkokkodi/Desktop/freqs_cdf.csv");
-			for(Entry<Integer, Double> e: c.getEntrySet()){
-				pf.writeToFile(e.getKey()+","+e.getValue());
-			}
-			pf.closeFile();
-		} catch (IOException e) {
+			j++;
+
 		}
 	}
 

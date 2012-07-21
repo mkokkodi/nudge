@@ -1,3 +1,14 @@
+/****************************************************
+ * @author Marios Kokkodis                          *
+ * comments/questions : mkokkodi@odesk.com     		*
+ *													*					  
+ *  Class Description  - Implementation of unigram
+ *  language model.		                    		*	
+ *													*  
+ * 	*************************************************									
+ */
+
+
 package kokkodis.lm;
 
 import java.io.BufferedReader;

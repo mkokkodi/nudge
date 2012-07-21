@@ -6,7 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 
-import kokkodis.lm.TextHolder;
+import kokkodis.holders.TextHolder;
 
 public class UpdateTrainTest {
 

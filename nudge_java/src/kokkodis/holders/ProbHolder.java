@@ -1,3 +1,12 @@
+/****************************************************
+ * @author Marios Kokkodis                          *
+ * comments/questions : mkokkodi@odesk.com     		*
+ *													*					  
+ *  Class Description   - Probabiltiy holder class. *	
+ *													*  
+ * 	*************************************************									
+ */
+
 package kokkodis.holders;
 
 public class ProbHolder {
@@ -5,7 +14,7 @@ public class ProbHolder {
 	private String opening;
 	private String conractor;
 	private Double prob;
-	private Integer label;
+	private Integer actualLabel;
 
 	/**
 	 * @param args
@@ -14,7 +23,7 @@ public class ProbHolder {
 	public ProbHolder(double prob, int label) {
 		super();
 		this.prob = prob;
-		this.label = label;
+		this.actualLabel = label;
 	}
 
 	public Double getProb() {
@@ -25,17 +34,17 @@ public class ProbHolder {
 		this.prob = prob;
 	}
 
-	public Integer getLabel() {
-		return label;
+	public Integer getActualabel() {
+		return actualLabel;
 	}
 
-	public void setLabel(int label) {
-		this.label = label;
+	public void setActuaLabel(int label) {
+		this.actualLabel = label;
 	}
 
 	public boolean isPositive() {
 
-		return (label == 1) ? true : false;
+		return (actualLabel == 1) ? true : false;
 	}
 
 	public String getOpening() {
